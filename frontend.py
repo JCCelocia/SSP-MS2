@@ -9,7 +9,7 @@ from typing import Optional
 
 from backend import (
     SystemInfoBackend, ProcessBackend, NetworkBackend, 
-    FileIntegrityBackend, PortScannerBackend
+    FileIntegrityBackend, PortScannerBackend, NetworkTrafficBackend
 )
 
 
@@ -637,6 +637,210 @@ class NetworkConnectionsFrame(ctk.CTkFrame):
         self.after(0, update_ui)
 
 
+class NetworkTrafficFrame(ctk.CTkFrame):
+    """Network Traffic Analyzer Frame"""
+    
+    def __init__(self, parent):
+        super().__init__(parent, corner_radius=15)
+        self.backend = NetworkTrafficBackend()
+        self.setup_ui()
+        self.setup_callbacks()
+    
+    def setup_ui(self):
+        main_container = ctk.CTkFrame(self, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=30, pady=30)
+        
+        # Header section
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 10))
+        
+        title = ctk.CTkLabel(header_frame, text="Network Traffic Analyzer", 
+                           font=ctk.CTkFont(size=28, weight="bold"))
+        title.pack(side="left")
+        
+        subtitle = ctk.CTkLabel(header_frame, text="Capture and analyze network packets in real-time", 
+                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
+        subtitle.pack(side="left", padx=(15, 0), anchor="s")
+        
+        # Warning
+        warning = ctk.CTkLabel(main_container, text="Requires administrator/root privileges • Only capture on networks you own or have permission to monitor", 
+                              text_color="orange", font=ctk.CTkFont(size=12, weight="bold"))
+        warning.pack(pady=(0, 15))
+        
+        # Controls section
+        self.create_controls(main_container)
+        
+        # Status section
+        self.create_status_section(main_container)
+        
+        # Packet table
+        self.create_packet_table(main_container)
+    
+    def create_controls(self, parent):
+        """Create control section"""
+        controls_section = ctk.CTkFrame(parent, corner_radius=10)
+        controls_section.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(controls_section, text="Capture Controls", 
+                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Filter row
+        filter_row = ctk.CTkFrame(controls_section, fg_color="transparent")
+        filter_row.pack(pady=(0, 10))
+        
+        ctk.CTkLabel(filter_row, text="Protocol:", font=ctk.CTkFont(size=12)).pack(side="left", padx=(20, 5))
+        self.protocol_var = tk.StringVar(value="All")
+        protocol_dropdown = ctk.CTkOptionMenu(filter_row, variable=self.protocol_var,
+                                            values=["All", "TCP", "UDP", "ICMP"], width=100)
+        protocol_dropdown.pack(side="left", padx=(0, 20))
+        
+        ctk.CTkLabel(filter_row, text="Port:", font=ctk.CTkFont(size=12)).pack(side="left", padx=(0, 5))
+        self.port_entry = ctk.CTkEntry(filter_row, width=80, placeholder_text="80")
+        self.port_entry.pack(side="left")
+        
+        # Button row
+        button_row = ctk.CTkFrame(controls_section, fg_color="transparent")
+        button_row.pack(pady=(0, 15))
+        
+        self.start_btn = ctk.CTkButton(button_row, text="Start Capture", command=self.start_capture,
+                                      fg_color="green", hover_color="darkgreen", height=35, width=130)
+        self.start_btn.pack(side="left", padx=(20, 10))
+        
+        self.stop_btn = ctk.CTkButton(button_row, text="Stop Capture", command=self.stop_capture,
+                                     fg_color="red", hover_color="darkred", state="disabled", height=35, width=130)
+        self.stop_btn.pack(side="left", padx=(0, 10))
+        
+        self.clear_btn = ctk.CTkButton(button_row, text="Clear Display", command=self.clear_display,
+                                      height=35, width=130)
+        self.clear_btn.pack(side="left")
+    
+    def create_status_section(self, parent):
+        """Create status display section"""
+        status_section = ctk.CTkFrame(parent, corner_radius=10)
+        status_section.pack(fill="x", pady=(0, 15))
+        
+        status_inner = ctk.CTkFrame(status_section, fg_color="transparent")
+        status_inner.pack(fill="x", padx=20, pady=15)
+        
+        self.status_label = ctk.CTkLabel(status_inner, text="Ready to capture",
+                                        font=ctk.CTkFont(size=12), text_color=("gray60", "gray40"))
+        self.status_label.pack(side="left")
+        
+        self.packet_count_label = ctk.CTkLabel(status_inner, text="Packets: 0",
+                                              font=ctk.CTkFont(size=12, weight="bold"))
+        self.packet_count_label.pack(side="right")
+    
+    def create_packet_table(self, parent):
+        """Create packet display table"""
+        table_frame = ctk.CTkFrame(parent, corner_radius=10)
+        table_frame.pack(fill="both", expand=True)
+        
+        # Header
+        header_label = ctk.CTkLabel(table_frame, text="Captured Packets", 
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        header_label.pack(pady=(15, 10))
+        
+        # Table columns
+        columns = {
+            'time': ('Timestamp', 120),
+            'src_ip': ('Source IP', 140),
+            'dst_ip': ('Destination IP', 140),
+            'protocol': ('Protocol', 80),
+            'src_port': ('Src Port', 80),
+            'dst_port': ('Dst Port', 80),
+            'size': ('Size (bytes)', 100)
+        }
+        
+        self.packet_table = TableFrame(table_frame, columns)
+        self.packet_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # Configure alternating row colors
+        self.packet_table.configure_tags({
+            'evenrow': {'background': '#363636'},
+            'oddrow': {'background': '#2b2b2b'}
+        })
+    
+    def setup_callbacks(self):
+        """Setup backend callbacks"""
+        self.backend.set_callbacks(
+            on_packet_captured=self.on_packet_captured,
+            on_capture_error=self.on_capture_error,
+            on_capture_started=self.on_capture_started,
+            on_capture_stopped=self.on_capture_stopped
+        )
+    
+    def on_filter_changed(self):
+        """Called when filter values change - update backend filters in real-time"""
+        protocol_filter = self.protocol_var.get()
+        port_filter = self.port_entry.get().strip()
+        self.backend.update_filters(protocol_filter, port_filter)
+    
+    def start_capture(self):
+        """Start packet capture"""
+        # Set initial filter values
+        self.on_filter_changed()
+        
+        # Start capture without passing filters
+        if self.backend.start_capture():
+            self.start_btn.configure(state="disabled")
+            self.stop_btn.configure(state="normal")
+    
+    def stop_capture(self):
+        """Stop packet capture"""
+        self.backend.stop_capture()
+        self.start_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled")
+    
+    def clear_display(self):
+        """Clear packet display"""
+        self.packet_table.clear()
+        self.backend.packet_count = 0
+        self.packet_count_label.configure(text="Packets: 0")
+        self.status_label.configure(text="Display cleared")
+    
+    # Callback methods
+    def on_packet_captured(self, packet_data):
+        """Called when a packet is captured"""
+        def update_ui():
+            count = self.backend.get_packet_count()
+            tag = 'evenrow' if count % 2 == 0 else 'oddrow'
+            
+            self.packet_table.insert([
+                packet_data['timestamp'],
+                packet_data['src_ip'],
+                packet_data['dst_ip'],
+                packet_data['protocol'],
+                packet_data['src_port'],
+                packet_data['dst_port'],
+                str(packet_data['size'])
+            ], tags=[tag])
+            
+            self.packet_count_label.configure(text=f"Packets: {count}")
+            
+            # Auto-scroll to bottom
+            children = self.packet_table.tree.get_children()
+            if children:
+                self.packet_table.tree.yview_moveto(1)
+        
+        self.after(0, update_ui)
+    
+    def on_capture_error(self, error_msg):
+        """Called when a capture error occurs"""
+        self.after(0, lambda: msgbox.showerror("Capture Error", error_msg))
+        self.after(0, lambda: [
+            self.start_btn.configure(state="normal"),
+            self.stop_btn.configure(state="disabled")
+        ])
+    
+    def on_capture_started(self):
+        """Called when capture starts"""
+        self.after(0, lambda: self.status_label.configure(text="Capturing packets..."))
+    
+    def on_capture_stopped(self):
+        """Called when capture stops"""
+        self.after(0, lambda: self.status_label.configure(text="Capture stopped"))
+
+
 class FileIntegrityFrame(ctk.CTkFrame):
     """File Integrity Frame"""
     
@@ -1134,6 +1338,7 @@ This toolkit helps you monitor your system and test security configurations safe
             ("System Information", "View computer details like memory, processor cores, and uptime."),
             ("Process Monitor", "View and manage running programs. End unresponsive applications."),
             ("Network Connections", "Monitor active network connections and see what's communicating."),
+            ("Network Traffic", "Capture and analyze network packets in real-time with protocol filtering."),
             ("Port Scanner", "Check which network services are open. Only scan authorized systems."),
             ("File Integrity Checker", "Monitor important files for changes using secure hash fingerprints."),
         ]
@@ -1159,10 +1364,10 @@ This toolkit helps you monitor your system and test security configurations safe
         ctk.CTkLabel(notes_card, text="Important Notes", 
                    font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 10))
         
-        notes_text = """- Only scan systems you own or have permission to test
-- Unauthorized scanning may violate local laws and policies
-- Some features require administrator privileges
-- Install 'psutil' package for full functionality: pip install psutil
+        notes_text = """- Only scan systems and networks you own or have permission to test
+- Unauthorized scanning/packet capture may violate local laws and policies
+- Some features require administrator privileges (especially packet capture)
+- Install dependencies: pip install psutil scapy
 - Always confirm destructive actions like ending processes
 - This tool is for educational and authorized security testing only"""
         
@@ -1211,7 +1416,7 @@ class MainApplication(ctk.CTk):
         # Create sidebar
         self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(8, weight=1)
+        self.sidebar.grid_rowconfigure(9, weight=1)
         
         # Sidebar title
         sidebar_title = ctk.CTkLabel(self.sidebar, text="Security Toolkit", 
@@ -1224,6 +1429,7 @@ class MainApplication(ctk.CTk):
             "System Info",
             "Process Monitor", 
             "Network Connections",
+            "Network Traffic",
             "Port Scanner",
             "File Integrity",
             "About"
@@ -1246,6 +1452,7 @@ class MainApplication(ctk.CTk):
         self.frames["System Info"] = SystemInfoFrame(self.content_frame)
         self.frames["Process Monitor"] = ProcessMonitorFrame(self.content_frame)
         self.frames["Network Connections"] = NetworkConnectionsFrame(self.content_frame)
+        self.frames["Network Traffic"] = NetworkTrafficFrame(self.content_frame)
         self.frames["Port Scanner"] = PortScannerFrame(self.content_frame)
         self.frames["File Integrity"] = FileIntegrityFrame(self.content_frame)
         self.frames["About"] = AboutFrame(self.content_frame)

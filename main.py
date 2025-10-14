@@ -5,6 +5,7 @@ A GUI application for system monitoring and security testing.
 Requirements:
 - customtkinter: pip install customtkinter
 - psutil (optional): pip install psutil
+- scapy (optional): pip install scapy
 
 Usage:
 python main.py
@@ -29,18 +30,40 @@ except ImportError as e:
 
 def check_dependencies():
     """Check and warn about optional dependencies"""
+    missing_deps = []
+    
     try:
         import psutil
     except ImportError:
-        # Show warning but don't exit - psutil is optional
+        missing_deps.append("psutil")
+    
+    try:
+        import scapy
+    except ImportError:
+        missing_deps.append("scapy")
+    
+    if missing_deps:
+        # Show warning but don't exit - these are optional
+        dep_list = "\n".join([f"- {dep}" for dep in missing_deps])
+        affected_features = []
+        
+        if "psutil" in missing_deps:
+            affected_features.extend([
+                "- System Information",
+                "- Process Monitor",
+                "- Network Connections"
+            ])
+        
+        if "scapy" in missing_deps:
+            affected_features.append("- Network Traffic Analyzer")
+        
+        feature_list = "\n".join(affected_features)
+        
         msgbox.showwarning(
-            "Optional Dependency Missing",
-            "The 'psutil' package is not installed.\n\n"
-            "Some features will have limited functionality:\n"
-            "- System Information\n"
-            "- Process Monitor\n"
-            "- Network Connections\n\n"
-            "To install: pip install psutil"
+            "Optional Dependencies Missing",
+            f"The following packages are not installed:\n{dep_list}\n\n"
+            f"Some features will have limited functionality:\n{feature_list}\n\n"
+            f"To install: pip install {' '.join(missing_deps)}"
         )
 
 
@@ -55,12 +78,21 @@ def main():
         
         # Handle window close
         def on_closing():
-            # Stop any running scans before closing
+            # Stop any running operations before closing
             try:
+                # Stop port scanner if running
                 port_scanner_frame = app.frames.get("Port Scanner")
                 if port_scanner_frame and port_scanner_frame.backend.is_scanning():
                     if msgbox.askyesno("Scan in Progress", "A port scan is currently running. Stop the scan and exit?"):
                         port_scanner_frame.backend.stop_scan()
+                    else:
+                        return  # Don't close if user cancels
+                
+                # Stop network traffic capture if running
+                network_traffic_frame = app.frames.get("Network Traffic")
+                if network_traffic_frame and network_traffic_frame.backend.is_capturing:
+                    if msgbox.askyesno("Capture in Progress", "Network capture is currently running. Stop capture and exit?"):
+                        network_traffic_frame.backend.stop_capture()
                     else:
                         return  # Don't close if user cancels
             except Exception:
@@ -72,6 +104,7 @@ def main():
         
         # Start the GUI
         print("Starting Local Security Toolkit...")
+        print("Note: Some features may require administrator/root privileges")
         app.mainloop()
         
     except KeyboardInterrupt:

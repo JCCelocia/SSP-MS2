@@ -15,6 +15,12 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
+try:
+    from scapy.all import sniff, IP, TCP, UDP, ICMP, IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, ICMPv6ND_NS, ICMPv6ND_NA
+    SCAPY_AVAILABLE = True
+except ImportError:
+    SCAPY_AVAILABLE = False
+
 
 class SystemInfoBackend:
     """Backend for system information retrieval"""
@@ -118,6 +124,189 @@ class NetworkBackend:
             return [{'error': f"Error listing connections: {str(e)}"}]
         
         return connections
+
+
+class NetworkTrafficBackend:
+    """Backend for network traffic analysis"""
+    
+    def __init__(self):
+        self.is_capturing = False
+        self.capture_thread = None
+        self.packet_count = 0
+        self.protocol_filter = "All"
+        self.port_filter = ""
+        
+        # Callback functions for UI updates
+        self.on_packet_captured: Optional[Callable[[dict], None]] = None
+        self.on_capture_error: Optional[Callable[[str], None]] = None
+        self.on_capture_started: Optional[Callable[[], None]] = None
+        self.on_capture_stopped: Optional[Callable[[], None]] = None
+    
+    def set_callbacks(self,
+                     on_packet_captured: Optional[Callable[[dict], None]] = None,
+                     on_capture_error: Optional[Callable[[str], None]] = None,
+                     on_capture_started: Optional[Callable[[], None]] = None,
+                     on_capture_stopped: Optional[Callable[[], None]] = None):
+        """Set callback functions for UI updates"""
+        self.on_packet_captured = on_packet_captured
+        self.on_capture_error = on_capture_error
+        self.on_capture_started = on_capture_started
+        self.on_capture_stopped = on_capture_stopped
+    
+    def update_filters(self, protocol_filter: str, port_filter: str):
+        """Update filters in real-time during capture"""
+        self.protocol_filter = protocol_filter
+        self.port_filter = port_filter
+    
+    def start_capture(self) -> bool:
+        """Start capturing network packets"""
+        if not SCAPY_AVAILABLE:
+            if self.on_capture_error:
+                self.on_capture_error("Scapy module required for packet capture")
+            return False
+        
+        if self.is_capturing:
+            return False
+        
+        self.is_capturing = True
+        self.packet_count = 0
+        
+        if self.on_capture_started:
+            self.on_capture_started()
+        
+        # Start capture in separate thread
+        self.capture_thread = threading.Thread(
+            target=self._capture_packets_thread,
+            daemon=True
+        )
+        self.capture_thread.start()
+        return True
+    
+    def stop_capture(self):
+        """Stop capturing network packets"""
+        if self.is_capturing:
+            self.is_capturing = False
+            if self.on_capture_stopped:
+                self.on_capture_stopped()
+    
+    def _capture_packets_thread(self):
+        """Capture packets using Scapy in separate thread"""
+        try:
+            sniff(prn=lambda pkt: self._process_packet(pkt),
+                  store=False,
+                  stop_filter=lambda x: not self.is_capturing)
+        except PermissionError:
+            if self.on_capture_error:
+                self.on_capture_error("Administrator/root privileges required to capture packets")
+        except Exception as e:
+            if self.on_capture_error:
+                self.on_capture_error(f"Error capturing packets: {str(e)}")
+    
+    def _process_packet(self, packet):
+        """Process and filter captured packets"""
+        if not self.is_capturing:
+            return
+        
+        try:
+            src_ip = None
+            dst_ip = None
+            protocol = ""
+            src_port = "-"
+            dst_port = "-"
+            packet_size = len(packet)
+            
+            # Check for IPv4
+            if IP in packet:
+                src_ip = packet[IP].src
+                dst_ip = packet[IP].dst
+                
+                if TCP in packet:
+                    protocol = "TCP"
+                    src_port = str(packet[TCP].sport)
+                    dst_port = str(packet[TCP].dport)
+                elif UDP in packet:
+                    protocol = "UDP"
+                    src_port = str(packet[UDP].sport)
+                    dst_port = str(packet[UDP].dport)
+                elif ICMP in packet:
+                    protocol = "ICMP"
+                else:
+                    protocol = "Other"
+            
+            # Check for IPv6
+            elif IPv6 in packet:
+                src_ip = packet[IPv6].src
+                dst_ip = packet[IPv6].dst
+                
+                if TCP in packet:
+                    protocol = "TCP"
+                    src_port = str(packet[TCP].sport)
+                    dst_port = str(packet[TCP].dport)
+                elif UDP in packet:
+                    protocol = "UDP"
+                    src_port = str(packet[UDP].sport)
+                    dst_port = str(packet[UDP].dport)
+                elif ICMPv6EchoRequest in packet or ICMPv6EchoReply in packet or ICMPv6ND_NS in packet or ICMPv6ND_NA in packet:
+                    protocol = "ICMP"
+                else:
+                    protocol = "Other"
+            else:
+                return
+            
+            if src_ip is None or dst_ip is None:
+                return
+            
+            # Apply filters (read current filter values in real-time)
+            if not self._apply_filters(protocol, src_port, dst_port):
+                return
+            
+            # Get timestamp
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            
+            # Create packet data dictionary
+            packet_data = {
+                'timestamp': timestamp,
+                'src_ip': src_ip,
+                'dst_ip': dst_ip,
+                'protocol': protocol,
+                'src_port': src_port,
+                'dst_port': dst_port,
+                'size': packet_size
+            }
+            
+            # Notify UI
+            self.packet_count += 1
+            if self.on_packet_captured:
+                self.on_packet_captured(packet_data)
+                
+        except Exception:
+            pass  # Silently ignore malformed packets
+    
+    def _apply_filters(self, protocol: str, src_port: str, dst_port: str) -> bool:
+        """Apply user-defined filters to packets"""
+        # Protocol filter (read current value)
+        protocol_filter_val = self.protocol_filter
+        if protocol_filter_val != "All" and protocol != protocol_filter_val:
+            return False
+        
+        # Port filter (read current value)
+        port_filter_val = self.port_filter.strip()
+        if port_filter_val:
+            try:
+                port_num = int(port_filter_val)
+                if src_port != "-" and dst_port != "-":
+                    if int(src_port) != port_num and int(dst_port) != port_num:
+                        return False
+                else:
+                    return False
+            except ValueError:
+                pass  # Invalid port number, ignore filter
+        
+        return True
+    
+    def get_packet_count(self) -> int:
+        """Get the current packet count"""
+        return self.packet_count
 
 
 class FileIntegrityBackend:

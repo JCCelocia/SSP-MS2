@@ -3,13 +3,10 @@ import tkinter as tk
 from tkinter import ttk
 import threading
 import tkinter.messagebox as msgbox
-import tkinter.filedialog as filedialog
-from pathlib import Path
 from typing import Optional
 
 from backend import (
-    SystemInfoBackend, ProcessBackend, NetworkBackend, 
-    FileIntegrityBackend, PortScannerBackend, NetworkTrafficBackend
+    SystemInfoBackend, PortScannerBackend, NetworkTrafficBackend
 )
 
 
@@ -20,7 +17,7 @@ class MemoryProgressCard(ctk.CTkFrame):
         super().__init__(parent, corner_radius=10)
         self.configure(fg_color=("gray85", "gray25"))
         
-        # Title - consistent with InfoCard
+        # Title 
         self.title_label = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=14, weight="bold"))
         self.title_label.pack(pady=(15, 5))
         
@@ -28,12 +25,12 @@ class MemoryProgressCard(ctk.CTkFrame):
         self.progress_bar = ctk.CTkProgressBar(self, width=200, height=20)
         self.progress_bar.pack(pady=(10, 10), padx=20)
         
-        # Memory usage text - consistent with InfoCard values
+        # Memory usage text 
         self.usage_label = ctk.CTkLabel(self, text="0.0 GB used / 0.0 GB total", 
                                        font=ctk.CTkFont(size=24, weight="bold"))
         self.usage_label.pack(pady=5)
         
-        # Description - consistent with InfoCard
+        # Description
         if description:
             self.desc_label = ctk.CTkLabel(self, text=description, font=ctk.CTkFont(size=18), 
                                          text_color=("gray55", "gray45"))
@@ -47,10 +44,8 @@ class MemoryProgressCard(ctk.CTkFrame):
             used_gb = total_gb - available_gb if total_gb > 0 else 0
             usage_percentage = (used_gb / total_gb) if total_gb > 0 else 0
             
-            # Update progress bar (clamp between 0 and 1)
             self.progress_bar.set(max(0, min(1, usage_percentage)))
-            
-            # Update text - show simplified format
+                        
             self.usage_label.configure(text=f"{used_gb:.1f} / {total_gb:.1f} GB")
             
             # Color the progress bar based on usage
@@ -78,13 +73,13 @@ class InfoCard(ctk.CTkFrame):
         title_label = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=14, weight="bold"))
         title_label.pack(pady=(15, 5))
         
-        # Main value - larger and prominent
+        # Main value 
         value_label = ctk.CTkLabel(self, text=str(value), font=ctk.CTkFont(size=24, weight="bold"))
         if value_color:
             value_label.configure(text_color=value_color)
         value_label.pack(pady=5)
         
-        # Description/subtitle - smaller and muted
+        # Description/subtitle
         if description:
             desc_label = ctk.CTkLabel(self, text=description, font=ctk.CTkFont(size=18), 
                                     text_color=("gray55", "gray45"))
@@ -99,12 +94,10 @@ class TableFrame(ctk.CTkFrame):
     def __init__(self, parent, columns, show_headers=True):
         super().__init__(parent, corner_radius=10)
         self.columns = columns
-        
-        # Configure treeview style for dark theme
+                
         style = ttk.Style()
         style.theme_use("clam")
-        
-        # Configure colors for dark theme
+                
         style.configure("Treeview",
                        background="#2b2b2b",
                        foreground="white",
@@ -168,8 +161,7 @@ class SystemInfoFrame(ctk.CTkFrame):
     def setup_ui(self):
         main_container = ctk.CTkFrame(self, fg_color="transparent")
         main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
+                
         header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 25))
         
@@ -184,23 +176,20 @@ class SystemInfoFrame(ctk.CTkFrame):
         refresh_btn = ctk.CTkButton(header_frame, text="Refresh", command=self.refresh_info,
                                   height=35, width=120)
         refresh_btn.pack(side="right")
-        
-        # Cards container
+                
         self.cards_frame = ctk.CTkFrame(main_container, fg_color="transparent")
         self.cards_frame.pack(fill="both", expand=True)
-        
-        # Configure grid for cards
+                
         for i in range(3):
             self.cards_frame.grid_columnconfigure(i, weight=1, uniform="col")
         for i in range(2):
             self.cards_frame.grid_rowconfigure(i, weight=1, uniform="row")
-        
-        # Load initial data
+                
         self.refresh_info()
     
     def refresh_info(self):
         """Refresh system information with card display"""
-        # Clear existing cards
+        
         for widget in self.cards_frame.winfo_children():
             widget.destroy()
         
@@ -224,7 +213,7 @@ class SystemInfoFrame(ctk.CTkFrame):
             total_memory_str = info.get('total_memory', '0 GB')
             available_memory_str = info.get('available_memory', '0 GB')
             
-            # Extract numeric values (assuming format like "15.7 GB")
+            # Extract numeric values
             try:
                 total_gb = float(total_memory_str.split()[0]) if 'GB' in total_memory_str else 0
                 available_gb = float(available_memory_str.split()[0]) if 'GB' in available_memory_str else 0
@@ -252,9 +241,8 @@ class SystemInfoFrame(ctk.CTkFrame):
                 ("System Uptime", uptime_text, uptime_desc, uptime_color),
                 ("Status", "Running", "System operational", "green")
             ]
-            
-            # Position regular cards
-            card_positions = [0, 1, 3, 4]  # Skip position 2 for memory progress card
+                        
+            card_positions = [0, 1, 3, 4]  
             for i, card_info in enumerate(card_data):
                 if i < len(card_positions):
                     pos = card_positions[i]
@@ -263,8 +251,7 @@ class SystemInfoFrame(ctk.CTkFrame):
                     title, value, desc, color = card_info
                     card = InfoCard(self.cards_frame, title, value, desc, color)
                     card.grid(row=row, column=col, sticky="nsew", padx=10, pady=10)
-            
-            # Create memory progress card at position 2 (row 0, col 2)
+                        
             memory_card = MemoryProgressCard(self.cards_frame, "Memory Usage", "System RAM")
             memory_card.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
             memory_card.update_memory(total_gb, available_gb)
@@ -306,337 +293,6 @@ class SystemInfoFrame(ctk.CTkFrame):
         return uptime_str, None
 
 
-class ProcessMonitorFrame(ctk.CTkFrame):
-    """Process Monitor Frame"""
-    
-    def __init__(self, parent):
-        super().__init__(parent, corner_radius=15)
-        self.backend = ProcessBackend()
-        self.processes = []
-        self.filtered_processes = []
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 10))
-        
-        title = ctk.CTkLabel(header_frame, text="Process Monitor", 
-                           font=ctk.CTkFont(size=28, weight="bold"))
-        title.pack(side="left")
-        
-        subtitle = ctk.CTkLabel(header_frame, text="View and manage running programs", 
-                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
-        subtitle.pack(side="left", padx=(15, 0), anchor="s")
-        
-        # Controls section
-        controls_frame = ctk.CTkFrame(main_container, corner_radius=10)
-        controls_frame.pack(fill="x", pady=(0, 15))
-        
-        # Top row - refresh and search
-        top_controls = ctk.CTkFrame(controls_frame, fg_color="transparent")
-        top_controls.pack(fill="x", padx=20, pady=(15, 10))
-        
-        refresh_btn = ctk.CTkButton(top_controls, text="Refresh List", command=self.refresh_processes,
-                                  height=35, width=140)
-        refresh_btn.pack(side="left")
-        
-        # Search controls
-        ctk.CTkLabel(top_controls, text="Search:", 
-                   font=ctk.CTkFont(size=12)).pack(side="left", padx=(20, 5))
-        
-        self.search_entry = ctk.CTkEntry(top_controls, width=200, placeholder_text="Enter process name...")
-        self.search_entry.pack(side="left", padx=(0, 10))
-        self.search_entry.bind("<KeyRelease>", self.on_search_changed)
-        
-        clear_search_btn = ctk.CTkButton(top_controls, text="Clear", command=self.clear_search,
-                                       height=35, width=80)
-        clear_search_btn.pack(side="left")
-        
-        # Middle row - process termination
-        middle_controls = ctk.CTkFrame(controls_frame, fg_color="transparent")
-        middle_controls.pack(fill="x", padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(middle_controls, text="End Process:", 
-                   font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
-        
-        ctk.CTkLabel(middle_controls, text="PID:", 
-                   font=ctk.CTkFont(size=12)).pack(side="left", padx=(15, 5))
-        
-        self.pid_entry = ctk.CTkEntry(middle_controls, width=80, placeholder_text="12345")
-        self.pid_entry.pack(side="left", padx=(0, 15))
-        
-        kill_btn = ctk.CTkButton(middle_controls, text="End Process", command=self.kill_process,
-                               fg_color="red", hover_color="darkred", height=35, width=130)
-        kill_btn.pack(side="left")
-        
-        # Warning label
-        warning_label = ctk.CTkLabel(controls_frame, text="Ends the selected program. Use with caution.",
-                                   font=ctk.CTkFont(size=11), text_color=("orange", "orange"))
-        warning_label.pack(pady=(0, 15))
-        
-        # Process table
-        self.create_process_table(main_container)
-        
-        # Load initial data
-        self.refresh_processes()
-    
-    def create_process_table(self, parent):
-        """Create the process table"""
-        table_frame = ctk.CTkFrame(parent, corner_radius=10)
-        table_frame.pack(fill="both", expand=True)
-        
-        # Header
-        header_label = ctk.CTkLabel(table_frame, text="Running Processes", 
-                                  font=ctk.CTkFont(size=16, weight="bold"))
-        header_label.pack(pady=(15, 10))
-        
-        # Table columns
-        columns = {
-            'pid': ('PID', 80),
-            'name': ('Program Name', 200),
-            'username': ('User', 120),
-            'cpu': ('CPU %', 80),
-            'memory': ('Memory', 100)
-        }
-        
-        self.process_table = TableFrame(table_frame, columns)
-        self.process_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Configure alternating row colors
-        self.process_table.configure_tags({
-            'evenrow': {'background': '#363636'},
-            'oddrow': {'background': '#2b2b2b'}
-        })
-    
-    def refresh_processes(self):
-        """Refresh process list"""
-        self.process_table.clear()
-        
-        def load_processes():
-            try:
-                self.processes = self.backend.list_processes()
-                self.filtered_processes = self.processes.copy()
-                self.display_processes()
-            except Exception as e:
-                self.after(0, lambda: msgbox.showerror("Error", f"Failed to load processes: {str(e)}"))
-        
-        thread = threading.Thread(target=load_processes, daemon=True)
-        thread.start()
-    
-    def on_search_changed(self, event=None):
-        """Handle search input changes"""
-        search_term = self.search_entry.get().lower().strip()
-        
-        if not search_term:
-            self.filtered_processes = self.processes.copy()
-        else:
-            self.filtered_processes = []
-            for proc in self.processes:
-                if (search_term in proc.get('name', '').lower() or 
-                    search_term in proc.get('username', '').lower() or
-                    search_term in str(proc.get('pid', ''))):
-                    self.filtered_processes.append(proc)
-        
-        self.display_processes()
-    
-    def clear_search(self):
-        """Clear search field and show all processes"""
-        self.search_entry.delete(0, 'end')
-        self.filtered_processes = self.processes.copy()
-        self.display_processes()
-    
-    def display_processes(self):
-        """Display process list in table"""
-        def update_ui():
-            self.process_table.clear()
-            
-            processes_to_show = self.filtered_processes
-            
-            if processes_to_show and isinstance(processes_to_show[0], dict) and 'error' in processes_to_show[0]:
-                # Show error in table
-                self.process_table.insert(['ERROR', processes_to_show[0]['error'], '', '', ''])
-                return
-            
-            # Show search results count
-            search_term = self.search_entry.get().strip()
-            if search_term:
-                result_count = len(processes_to_show)
-                if result_count == 0:
-                    self.process_table.insert(['', f"No processes found matching '{search_term}'", '', '', ''])
-                    return
-            
-            # Add processes to table (limit to 100 for performance)
-            for i, proc in enumerate(processes_to_show[:100]):
-                try:
-                    memory_mb = proc['memory_rss'] / (1024 * 1024) if proc['memory_rss'] else 0
-                    memory_str = f"{memory_mb:.1f} MB" if memory_mb > 0 else "0 MB"
-                    cpu_str = f"{proc['cpu_percent']:.1f}%" if proc['cpu_percent'] else "0.0%"
-                    
-                    row_tag = 'evenrow' if i % 2 == 0 else 'oddrow'
-                    
-                    self.process_table.insert([
-                        str(proc['pid']),
-                        proc['name'][:30] if proc['name'] else 'Unknown',
-                        proc['username'][:15] if proc['username'] else 'Unknown',
-                        cpu_str,
-                        memory_str
-                    ], tags=[row_tag])
-                    
-                except (KeyError, TypeError):
-                    continue
-        
-        self.after(0, update_ui)
-    
-    def kill_process(self):
-        """Kill selected process"""
-        try:
-            pid = int(self.pid_entry.get())
-        except ValueError:
-            msgbox.showerror("Error", "Please enter a valid PID number")
-            return
-        
-        # Confirm action
-        if not msgbox.askyesno("Confirm Action", 
-                              f"End process with PID {pid}?\n\nThis may cause data loss if the program has unsaved work."):
-            return
-        
-        def kill_proc():
-            try:
-                success = self.backend.kill_process(pid)
-                message = f"Process {pid} ended successfully" if success else f"Failed to end process {pid}"
-                self.after(0, lambda: msgbox.showinfo("Result", message))
-                if success:
-                    self.after(0, self.refresh_processes)
-            except Exception as e:
-                self.after(0, lambda: msgbox.showerror("Error", f"Error ending process: {str(e)}"))
-        
-        thread = threading.Thread(target=kill_proc, daemon=True)
-        thread.start()
-
-
-class NetworkConnectionsFrame(ctk.CTkFrame):
-    """Network Connections Frame"""
-    
-    def __init__(self, parent):
-        super().__init__(parent, corner_radius=15)
-        self.backend = NetworkBackend()
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 10))
-        
-        title = ctk.CTkLabel(header_frame, text="Network Connections", 
-                           font=ctk.CTkFont(size=28, weight="bold"))
-        title.pack(side="left")
-        
-        subtitle = ctk.CTkLabel(header_frame, text="Monitor active network connections", 
-                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
-        subtitle.pack(side="left", padx=(15, 0), anchor="s")
-        
-        # Controls
-        controls_frame = ctk.CTkFrame(main_container, corner_radius=10)
-        controls_frame.pack(fill="x", pady=(0, 15))
-        
-        refresh_btn = ctk.CTkButton(controls_frame, text="Refresh", command=self.refresh_connections,
-                                  height=35, width=120)
-        refresh_btn.pack(padx=20, pady=15)
-        
-        # Connections table
-        self.create_connections_table(main_container)
-        
-        # Load initial data
-        self.refresh_connections()
-    
-    def create_connections_table(self, parent):
-        """Create the connections table"""
-        table_frame = ctk.CTkFrame(parent, corner_radius=10)
-        table_frame.pack(fill="both", expand=True)
-        
-        # Header
-        header_label = ctk.CTkLabel(table_frame, text="Active Connections", 
-                                  font=ctk.CTkFont(size=16, weight="bold"))
-        header_label.pack(pady=(15, 10))
-        
-        # Table columns
-        columns = {
-            'local': ('Local Address', 180),
-            'remote': ('Remote Address', 180),
-            'status': ('Status', 120),
-            'pid': ('Program (PID)', 120)
-        }
-        
-        self.connections_table = TableFrame(table_frame, columns)
-        self.connections_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Configure alternating row colors
-        self.connections_table.configure_tags({
-            'evenrow': {'background': '#363636'},
-            'oddrow': {'background': '#2b2b2b'},
-            'listening': {'background': '#1a5d1a', 'foreground': 'lightgreen'},
-            'established': {'background': '#1a4d5d', 'foreground': 'lightblue'}
-        })
-    
-    def refresh_connections(self):
-        """Refresh network connections"""
-        self.connections_table.clear()
-        
-        def load_connections():
-            try:
-                connections = self.backend.list_connections()
-                self.display_connections(connections)
-            except Exception as e:
-                self.after(0, lambda: msgbox.showerror("Error", f"Failed to load connections: {str(e)}"))
-        
-        thread = threading.Thread(target=load_connections, daemon=True)
-        thread.start()
-    
-    def display_connections(self, connections):
-        """Display connections in table"""
-        def update_ui():
-            self.connections_table.clear()
-            
-            if connections and isinstance(connections[0], dict) and 'error' in connections[0]:
-                # Show error in table
-                self.connections_table.insert(['ERROR', connections[0]['error'], '', ''])
-                return
-            
-            # Add connections to table
-            for i, conn in enumerate(connections):
-                try:
-                    pid_text = str(conn['pid']) if conn['pid'] != 'N/A' else 'N/A'
-                    status = conn['status']
-                    
-                    # Determine row styling
-                    row_tags = []
-                    if status == 'LISTEN':
-                        row_tags.append('listening')
-                    elif status == 'ESTABLISHED':
-                        row_tags.append('established')
-                    else:
-                        row_tags.append('evenrow' if i % 2 == 0 else 'oddrow')
-                    
-                    self.connections_table.insert([
-                        conn['local_addr'][:25],
-                        conn['remote_addr'][:25],
-                        status,
-                        pid_text
-                    ], tags=row_tags)
-                    
-                except (KeyError, TypeError):
-                    continue
-        
-        self.after(0, update_ui)
-
-
 class NetworkTrafficFrame(ctk.CTkFrame):
     """Network Traffic Analyzer Frame"""
     
@@ -649,8 +305,7 @@ class NetworkTrafficFrame(ctk.CTkFrame):
     def setup_ui(self):
         main_container = ctk.CTkFrame(self, fg_color="transparent")
         main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
+               
         header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 10))
         
@@ -661,19 +316,15 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         subtitle = ctk.CTkLabel(header_frame, text="Capture and analyze network packets in real-time", 
                               font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
         subtitle.pack(side="left", padx=(15, 0), anchor="s")
-        
-        # Warning
+                
         warning = ctk.CTkLabel(main_container, text="Requires administrator/root privileges • Only capture on networks you own or have permission to monitor", 
                               text_color="orange", font=ctk.CTkFont(size=12, weight="bold"))
         warning.pack(pady=(0, 15))
-        
-        # Controls section
+                
         self.create_controls(main_container)
-        
-        # Status section
+                
         self.create_status_section(main_container)
-        
-        # Packet table
+            
         self.create_packet_table(main_container)
     
     def create_controls(self, parent):
@@ -735,12 +386,10 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         table_frame = ctk.CTkFrame(parent, corner_radius=10)
         table_frame.pack(fill="both", expand=True)
         
-        # Header
         header_label = ctk.CTkLabel(table_frame, text="Captured Packets", 
                                   font=ctk.CTkFont(size=16, weight="bold"))
         header_label.pack(pady=(15, 10))
-        
-        # Table columns
+                
         columns = {
             'time': ('Timestamp', 120),
             'src_ip': ('Source IP', 140),
@@ -753,8 +402,7 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         
         self.packet_table = TableFrame(table_frame, columns)
         self.packet_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Configure alternating row colors
+                
         self.packet_table.configure_tags({
             'evenrow': {'background': '#363636'},
             'oddrow': {'background': '#2b2b2b'}
@@ -841,227 +489,6 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         self.after(0, lambda: self.status_label.configure(text="Capture stopped"))
 
 
-class FileIntegrityFrame(ctk.CTkFrame):
-    """File Integrity Frame"""
-    
-    def __init__(self, parent):
-        super().__init__(parent, corner_radius=15)
-        self.backend = FileIntegrityBackend()
-        self.current_file = None
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 20))
-        
-        title = ctk.CTkLabel(header_frame, text="File Integrity Checker", 
-                           font=ctk.CTkFont(size=28, weight="bold"))
-        title.pack(side="left")
-        
-        subtitle = ctk.CTkLabel(header_frame, text="Monitor files for unauthorized changes using secure hashes", 
-                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
-        subtitle.pack(side="left", padx=(15, 0), anchor="s")
-        
-        # File selection section
-        self.create_file_selection_section(main_container)
-        
-        # Baseline settings section
-        self.create_baseline_section(main_container)
-        
-        # Results section
-        self.create_results_section(main_container)
-    
-    def create_file_selection_section(self, parent):
-        """Create file selection section"""
-        file_section = ctk.CTkFrame(parent, corner_radius=10)
-        file_section.pack(fill="x", pady=(0, 15))
-        
-        ctk.CTkLabel(file_section, text="Select a File", 
-                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        file_controls = ctk.CTkFrame(file_section, fg_color="transparent")
-        file_controls.pack(pady=(0, 15))
-        
-        select_btn = ctk.CTkButton(file_controls, text="Choose File", command=self.select_file,
-                                 height=35, width=120)
-        select_btn.pack(side="left", padx=(20, 10))
-        
-        self.file_label = ctk.CTkLabel(file_controls, text="No file selected",
-                                     font=ctk.CTkFont(size=12), text_color=("gray60", "gray40"))
-        self.file_label.pack(side="left")
-    
-    def create_baseline_section(self, parent):
-        """Create baseline settings section"""
-        baseline_section = ctk.CTkFrame(parent, corner_radius=10)
-        baseline_section.pack(fill="x", pady=(0, 15))
-        
-        ctk.CTkLabel(baseline_section, text="Baseline Settings", 
-                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Input row
-        input_row = ctk.CTkFrame(baseline_section, fg_color="transparent")
-        input_row.pack(pady=(0, 10))
-        
-        ctk.CTkLabel(input_row, text="Baseline Name:", 
-                   font=ctk.CTkFont(size=12)).pack(side="left", padx=(20, 5))
-        
-        self.baseline_entry = ctk.CTkEntry(input_row, width=150, placeholder_text="my_file_baseline")
-        self.baseline_entry.pack(side="left", padx=(0, 20))
-        
-        # Button row
-        button_row = ctk.CTkFrame(baseline_section, fg_color="transparent")
-        button_row.pack(pady=(0, 15))
-        
-        compute_btn = ctk.CTkButton(button_row, text="Compute Hash", command=self.compute_hash,
-                                  height=35, width=120)
-        compute_btn.pack(side="left", padx=(20, 10))
-        
-        save_btn = ctk.CTkButton(button_row, text="Save Baseline", command=self.save_baseline,
-                               fg_color="green", hover_color="darkgreen", height=35, width=120)
-        save_btn.pack(side="left", padx=(0, 10))
-        
-        verify_btn = ctk.CTkButton(button_row, text="Verify File", command=self.verify_baseline,
-                                 fg_color="orange", hover_color="darkorange", height=35, width=120)
-        verify_btn.pack(side="left")
-        
-        # Help text
-        help_label = ctk.CTkLabel(baseline_section, 
-                                text="Compute shows the file's fingerprint - Save stores current state - Verify checks for changes",
-                                font=ctk.CTkFont(size=11), text_color=("gray60", "gray40"))
-        help_label.pack(pady=(0, 15))
-    
-    def create_results_section(self, parent):
-        """Create results section"""
-        results_section = ctk.CTkFrame(parent, corner_radius=10)
-        results_section.pack(fill="both", expand=True)
-        
-        ctk.CTkLabel(results_section, text="Results", 
-                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Results table
-        columns = {
-            'timestamp': ('Timestamp', 150),
-            'action': ('Action', 100),
-            'file': ('File', 200),
-            'status': ('Status', 100),
-            'hash': ('Hash (first 16 chars)', 200)
-        }
-        
-        self.results_table = TableFrame(results_section, columns)
-        self.results_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Configure result colors
-        self.results_table.configure_tags({
-            'success': {'background': '#1a5d1a', 'foreground': 'lightgreen'},
-            'failure': {'background': '#5d1a1a', 'foreground': 'lightcoral'},
-            'info': {'background': '#1a4d5d', 'foreground': 'lightblue'}
-        })
-    
-    def select_file(self):
-        """Select file for integrity checking"""
-        filename = filedialog.askopenfilename(
-            title="Select File for Integrity Check",
-            filetypes=[("All Files", "*.*")]
-        )
-        if filename:
-            self.current_file = filename
-            file_name = Path(filename).name
-            self.file_label.configure(text=f"Selected: {file_name}")
-    
-    def add_result(self, action, status, hash_value=None):
-        """Add result to the table"""
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        file_name = Path(self.current_file).name if self.current_file else "N/A"
-        hash_display = hash_value[:16] + "..." if hash_value else "N/A"
-        
-        if status in ["PASSED", "Computed", "Saved"]:
-            tag = 'success'
-        elif status in ["FAILED", "Error"]:
-            tag = 'failure'
-        else:
-            tag = 'info'
-        
-        self.results_table.insert([timestamp, action, file_name, status, hash_display], tags=[tag])
-    
-    def compute_hash(self):
-        """Compute hash of selected file"""
-        if not self.current_file:
-            msgbox.showerror("Error", "Please select a file first")
-            return
-        
-        def compute():
-            try:
-                hash_value = self.backend.compute_hash(self.current_file)
-                self.after(0, lambda: self.add_result("Compute", "Computed", hash_value))
-            except Exception as e:
-                self.after(0, lambda: [
-                    self.add_result("Compute", "Error"),
-                    msgbox.showerror("Error", f"Failed to compute hash: {str(e)}")
-                ])
-        
-        thread = threading.Thread(target=compute, daemon=True)
-        thread.start()
-    
-    def save_baseline(self):
-        """Save baseline hash"""
-        if not self.current_file:
-            msgbox.showerror("Error", "Please select a file first")
-            return
-        
-        baseline_name = self.baseline_entry.get().strip()
-        if not baseline_name:
-            msgbox.showerror("Error", "Please enter a baseline name")
-            return
-        
-        def save():
-            try:
-                hash_value = self.backend.compute_hash(self.current_file)
-                self.backend.save_baseline(baseline_name, self.current_file, hash_value)
-                self.after(0, lambda: self.add_result("Save", "Saved", hash_value))
-            except Exception as e:
-                self.after(0, lambda: [
-                    self.add_result("Save", "Error"),
-                    msgbox.showerror("Error", f"Failed to save baseline: {str(e)}")
-                ])
-        
-        thread = threading.Thread(target=save, daemon=True)
-        thread.start()
-    
-    def verify_baseline(self):
-        """Verify file against baseline"""
-        if not self.current_file:
-            msgbox.showerror("Error", "Please select a file first")
-            return
-        
-        baseline_name = self.baseline_entry.get().strip()
-        if not baseline_name:
-            msgbox.showerror("Error", "Please enter a baseline name")
-            return
-        
-        def verify():
-            try:
-                is_valid, current_hash = self.backend.verify(baseline_name, self.current_file)
-                status = "PASSED" if is_valid else "FAILED"
-                self.after(0, lambda: self.add_result("Verify", status, current_hash))
-                
-                if not is_valid:
-                    self.after(0, lambda: msgbox.showwarning("File Changed", 
-                                                           "File has been modified since baseline was saved!"))
-            except Exception as e:
-                self.after(0, lambda: [
-                    self.add_result("Verify", "Error"),
-                    msgbox.showerror("Error", f"Verification failed: {str(e)}")
-                ])
-        
-        thread = threading.Thread(target=verify, daemon=True)
-        thread.start()
-
-
 class PortScannerFrame(ctk.CTkFrame):
     """Port Scanner Frame"""
     
@@ -1087,18 +514,15 @@ class PortScannerFrame(ctk.CTkFrame):
                               font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
         subtitle.pack(side="left", padx=(15, 0), anchor="s")
         
-        # Warning
+        
         warning = ctk.CTkLabel(main_container, text="Only scan systems you own or have permission to test", 
                               text_color="orange", font=ctk.CTkFont(size=12, weight="bold"))
         warning.pack(pady=(0, 15))
-        
-        # Input and controls section
+                
         self.create_scan_controls(main_container)
-        
-        # Progress section
+                
         self.create_progress_section(main_container)
-        
-        # Results section
+                
         self.create_results_section(main_container)
     
     def create_scan_controls(self, parent):
@@ -1183,8 +607,7 @@ class PortScannerFrame(ctk.CTkFrame):
         
         self.results_table = TableFrame(results_section, columns)
         self.results_table.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Configure result colors
+                
         self.results_table.configure_tags({
             'open': {'background': '#1a5d1a', 'foreground': 'lightgreen'},
             'closed': {'background': '#2b2b2b', 'foreground': 'gray'},
@@ -1299,8 +722,7 @@ class AboutFrame(ctk.CTkFrame):
     def setup_ui(self):
         main_container = ctk.CTkFrame(self, fg_color="transparent")
         main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section
+                
         header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 25))
         
@@ -1311,16 +733,13 @@ class AboutFrame(ctk.CTkFrame):
         version = ctk.CTkLabel(header_frame, text="Version 1.0", 
                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
         version.pack(pady=(5, 0))
-        
-        # Content area with cards
+                
         content_frame = ctk.CTkFrame(main_container, fg_color="transparent")
         content_frame.pack(fill="both", expand=True)
-        
-        # Configure grid
+                
         content_frame.grid_columnconfigure(0, weight=1)
         content_frame.grid_columnconfigure(1, weight=1)
-        
-        # Overview card
+                
         overview_card = ctk.CTkFrame(content_frame, corner_radius=10)
         overview_card.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
         
@@ -1336,11 +755,8 @@ This toolkit helps you monitor your system and test security configurations safe
         # Tools cards
         tools_info = [
             ("System Information", "View computer details like memory, processor cores, and uptime."),
-            ("Process Monitor", "View and manage running programs. End unresponsive applications."),
-            ("Network Connections", "Monitor active network connections and see what's communicating."),
-            ("Network Traffic", "Capture and analyze network packets in real-time with protocol filtering."),
+            ("Network Traffic Analyzer", "Capture and analyze network packets in real-time with protocol filtering."),
             ("Port Scanner", "Check which network services are open. Only scan authorized systems."),
-            ("File Integrity Checker", "Monitor important files for changes using secure hash fingerprints."),
         ]
         
         for i, (tool_name, description) in enumerate(tools_info):
@@ -1348,7 +764,8 @@ This toolkit helps you monitor your system and test security configurations safe
             col = i % 2
             
             tool_card = ctk.CTkFrame(content_frame, corner_radius=10)
-            tool_card.grid(row=row, column=col, sticky="nsew", padx=(0 if col == 0 else 7, 7 if col == 0 else 0), pady=7)
+            tool_card.grid(row=row, column=col, sticky="nsew", 
+                         padx=(0 if col == 0 else 7, 7 if col == 0 else 0), pady=7)
             
             ctk.CTkLabel(tool_card, text=tool_name, 
                        font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(15, 5))
@@ -1366,9 +783,8 @@ This toolkit helps you monitor your system and test security configurations safe
         
         notes_text = """- Only scan systems and networks you own or have permission to test
 - Unauthorized scanning/packet capture may violate local laws and policies
-- Some features require administrator privileges (especially packet capture)
+- Network traffic capture requires administrator privileges
 - Install dependencies: pip install psutil scapy
-- Always confirm destructive actions like ending processes
 - This tool is for educational and authorized security testing only"""
         
         ctk.CTkLabel(notes_card, text=notes_text, 
@@ -1380,22 +796,17 @@ class MainApplication(ctk.CTk):
     
     def __init__(self):
         super().__init__()
-        
-        # Configure window
+                
         self.title("Local Security Toolkit")
         self.geometry("1200x820")
-        
-        # Set theme
+                
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-        
-        # Create UI
+                
         self.setup_ui()
-        
-        # Center window after UI is created
+                
         self.center_window()
-        
-        # Show initial frame
+                
         self.show_frame("System Info")
     
     def center_window(self):
@@ -1409,29 +820,23 @@ class MainApplication(ctk.CTk):
     
     def setup_ui(self):
         """Setup the main UI"""
-        # Configure grid
+        
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        
-        # Create sidebar
+                
         self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(9, weight=1)
-        
-        # Sidebar title
+                
         sidebar_title = ctk.CTkLabel(self.sidebar, text="Security Toolkit", 
                                    font=ctk.CTkFont(size=20, weight="bold"))
         sidebar_title.grid(row=0, column=0, padx=20, pady=(30, 20))
-        
-        # Sidebar buttons
+                
         self.sidebar_buttons = {}
         tools = [
             "System Info",
-            "Process Monitor", 
-            "Network Connections",
             "Network Traffic",
             "Port Scanner",
-            "File Integrity",
             "About"
         ]
         
@@ -1442,36 +847,28 @@ class MainApplication(ctk.CTk):
                                anchor="center")
             btn.grid(row=i, column=0, padx=10, pady=8)
             self.sidebar_buttons[tool] = btn
-        
-        # Create main content area
+                
         self.content_frame = ctk.CTkFrame(self, corner_radius=0)
         self.content_frame.grid(row=0, column=1, sticky="nsew")
-        
-        # Create all frames
+                
         self.frames = {}
         self.frames["System Info"] = SystemInfoFrame(self.content_frame)
-        self.frames["Process Monitor"] = ProcessMonitorFrame(self.content_frame)
-        self.frames["Network Connections"] = NetworkConnectionsFrame(self.content_frame)
         self.frames["Network Traffic"] = NetworkTrafficFrame(self.content_frame)
         self.frames["Port Scanner"] = PortScannerFrame(self.content_frame)
-        self.frames["File Integrity"] = FileIntegrityFrame(self.content_frame)
         self.frames["About"] = AboutFrame(self.content_frame)
-        
-        # Configure content frame grid
+                
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
     
     def show_frame(self, frame_name):
         """Show the selected frame"""
-        # Hide all frames
+        
         for frame in self.frames.values():
             frame.grid_remove()
-        
-        # Show selected frame
+                
         if frame_name in self.frames:
             self.frames[frame_name].grid(row=0, column=0, sticky="nsew")
-        
-        # Update button states
+                
         for name, btn in self.sidebar_buttons.items():
             if name == frame_name:
                 btn.configure(fg_color=("gray75", "gray25"))

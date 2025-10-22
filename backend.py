@@ -54,78 +54,6 @@ class SystemInfoBackend:
             return {'error': f"Error retrieving system info: {str(e)}"}
 
 
-class ProcessBackend:
-    """Backend for process monitoring"""
-    
-    def list_processes(self) -> List[dict]:
-        """List running processes"""
-        if not PSUTIL_AVAILABLE:
-            return [{'error': 'psutil module required for process monitoring'}]
-        
-        processes = []
-        try:
-            for proc in psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_info', 'cmdline']):
-                try:
-                    info = proc.info
-                    processes.append({
-                        'pid': info['pid'],
-                        'name': info['name'] or 'N/A',
-                        'username': info['username'] or 'N/A',
-                        'cpu_percent': info['cpu_percent'] or 0.0,
-                        'memory_rss': info['memory_info'].rss if info['memory_info'] else 0,
-                        'cmdline': ' '.join(info['cmdline']) if info['cmdline'] else 'N/A'
-                    })
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-        except Exception as e:
-            return [{'error': f"Error listing processes: {str(e)}"}]
-        
-        return processes
-    
-    def kill_process(self, pid: int) -> bool:
-        """Attempt to kill a process by PID"""
-        if not PSUTIL_AVAILABLE:
-            return False
-        
-        try:
-            proc = psutil.Process(pid)
-            proc.terminate()
-            proc.wait(timeout=3)
-            return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
-            return False
-        except Exception:
-            return False
-
-
-class NetworkBackend:
-    """Backend for network connection monitoring"""
-    
-    def list_connections(self) -> List[dict]:
-        """List network connections"""
-        if not PSUTIL_AVAILABLE:
-            return [{'error': 'psutil module required for network monitoring'}]
-        
-        connections = []
-        try:
-            for conn in psutil.net_connections(kind='inet'):
-                local_addr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "N/A"
-                remote_addr = f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else "N/A"
-                
-                connections.append({
-                    'local_addr': local_addr,
-                    'remote_addr': remote_addr,
-                    'status': conn.status or 'N/A',
-                    'pid': conn.pid or 'N/A'
-                })
-        except (psutil.AccessDenied, PermissionError):
-            return [{'error': 'Access denied. Administrator privileges may be required.'}]
-        except Exception as e:
-            return [{'error': f"Error listing connections: {str(e)}"}]
-        
-        return connections
-
-
 class NetworkTrafficBackend:
     """Backend for network traffic analysis"""
     
@@ -309,63 +237,6 @@ class NetworkTrafficBackend:
         return self.packet_count
 
 
-class FileIntegrityBackend:
-    """Backend for file integrity checking"""
-    
-    def __init__(self):
-        self.baseline_file = Path.home() / '.security_toolkit_baselines.json'
-        self._load_baselines()
-    
-    def _load_baselines(self):
-        """Load baseline hashes from file"""
-        try:
-            if self.baseline_file.exists():
-                with open(self.baseline_file, 'r') as f:
-                    self.baselines = json.load(f)
-            else:
-                self.baselines = {}
-        except Exception:
-            self.baselines = {}
-    
-    def _save_baselines(self):
-        """Save baseline hashes to file"""
-        try:
-            with open(self.baseline_file, 'w') as f:
-                json.dump(self.baselines, f, indent=2)
-        except Exception as e:
-            raise Exception(f"Failed to save baselines: {str(e)}")
-    
-    def compute_hash(self, path: str) -> str:
-        """Compute SHA256 hash of a file"""
-        try:
-            sha256_hash = hashlib.sha256()
-            with open(path, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    sha256_hash.update(chunk)
-            return sha256_hash.hexdigest()
-        except Exception as e:
-            raise Exception(f"Failed to compute hash: {str(e)}")
-    
-    def save_baseline(self, key: str, path: str, hash_value: str):
-        """Save baseline hash for a file"""
-        self.baselines[key] = {
-            'path': path,
-            'hash': hash_value,
-            'timestamp': datetime.now().isoformat()
-        }
-        self._save_baselines()
-    
-    def verify(self, key: str, path: str) -> Tuple[bool, str]:
-        """Verify file against baseline"""
-        if key not in self.baselines:
-            raise Exception(f"No baseline found for key: {key}")
-        
-        current_hash = self.compute_hash(path)
-        baseline_hash = self.baselines[key]['hash']
-        
-        return (current_hash == baseline_hash), current_hash
-
-
 class PortScannerBackend:
     """Backend for port scanning functionality"""
     
@@ -374,7 +245,7 @@ class PortScannerBackend:
         self.scan_thread = None
         self.stop_event = threading.Event()
         
-        # Callback functions for UI updates
+        
         self.on_scan_start: Optional[Callable[[], None]] = None
         self.on_scan_complete: Optional[Callable[..., None]] = None
         self.on_progress_update: Optional[Callable[[int, int, int], None]] = None
@@ -435,11 +306,10 @@ class PortScannerBackend:
         Returns: True if port is open, False otherwise
         """
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(timeout)
-            result = sock.connect_ex((target_ip, port))
-            sock.close()
-            return result == 0
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(timeout)
+                result = sock.connect_ex((target_ip, port))
+                return result == 0
         except Exception:
             return False
     

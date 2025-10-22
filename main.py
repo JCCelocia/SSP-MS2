@@ -48,11 +48,7 @@ def check_dependencies():
         affected_features = []
         
         if "psutil" in missing_deps:
-            affected_features.extend([
-                "- System Information",
-                "- Process Monitor",
-                "- Network Connections"
-            ])
+            affected_features.append("- System Information")
         
         if "scapy" in missing_deps:
             affected_features.append("- Network Traffic Analyzer")

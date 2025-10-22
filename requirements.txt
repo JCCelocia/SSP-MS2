@@ -1,0 +1,15 @@
+# Local Security Toolkit - Python Dependencies
+
+# Required Dependencies
+customtkinter>=5.0.0
+
+# Optional Dependencies (for full functionality)
+psutil>=5.8.0        # System Information feature
+scapy>=2.4.5         # Network Traffic Analyzer feature
+
+# Development Dependencies (optional)
+# Uncomment these for development:
+# pytest>=7.0.0      # Testing framework
+# pylint>=2.12.0     # Code linting
+# black>=22.0.0      # Code formatting
+# mypy>=0.930        # Type checking

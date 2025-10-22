@@ -10,6 +10,111 @@ from backend import (
 )
 
 
+class WelcomeFrame(ctk.CTkFrame):
+    """Welcome/Main Menu Frame"""
+    
+    def __init__(self, parent, on_module_select):
+        super().__init__(parent, corner_radius=15)
+        self.on_module_select = on_module_select
+        self.setup_ui()
+    
+    def setup_ui(self):
+        main_container = ctk.CTkFrame(self, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=30, pady=30)
+        
+        # Header section with welcome message
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(20, 10))
+        
+        title = ctk.CTkLabel(header_frame, text="🛡️ Local Security Toolkit", 
+                           font=ctk.CTkFont(size=36, weight="bold"))
+        title.pack(pady=(0, 10))
+        
+        subtitle = ctk.CTkLabel(header_frame, text="Welcome! Select a security tool to get started", 
+                              font=ctk.CTkFont(size=16), text_color=("gray60", "gray40"))
+        subtitle.pack()
+        
+        # Course info
+        course_info = ctk.CTkLabel(header_frame, 
+                                  text="MO-IT142 - Security Script Programming | Milestone 2",
+                                  font=ctk.CTkFont(size=12), text_color=("gray50", "gray50"))
+        course_info.pack(pady=(5, 0))
+        
+        # Module selection cards
+        cards_container = ctk.CTkFrame(main_container, fg_color="transparent")
+        cards_container.pack(fill="both", expand=True, pady=30)
+        
+        # Configure grid
+        cards_container.grid_columnconfigure(0, weight=1)
+        cards_container.grid_columnconfigure(1, weight=1)
+        cards_container.grid_rowconfigure(0, weight=1)
+        cards_container.grid_rowconfigure(1, weight=1)
+        
+        # Module data: (name, icon, description, color)
+        modules = [
+            ("System Info", "💻", "Monitor system resources, memory usage, and uptime", "#3B8ED0"),
+            ("Network Traffic", "🌐", "Capture and analyze network packets in real-time", "#2D8C5C"),
+            ("Port Scanner", "🔍", "Scan ports and identify running services", "#D97D0D"),
+            ("About", "ℹ️", "Learn more about the toolkit and usage guidelines", "#7D5BA6")
+        ]
+        
+        for idx, (name, icon, description, color) in enumerate(modules):
+            row = idx // 2
+            col = idx % 2
+            
+            # Create module card
+            module_card = ctk.CTkFrame(cards_container, corner_radius=15, 
+                                      fg_color=("gray80", "gray20"))
+            module_card.grid(row=row, column=col, sticky="nsew", 
+                           padx=15, pady=15)
+            
+            # Icon
+            icon_label = ctk.CTkLabel(module_card, text=icon, 
+                                    font=ctk.CTkFont(size=48))
+            icon_label.pack(pady=(25, 10))
+            
+            # Module name
+            name_label = ctk.CTkLabel(module_card, text=name, 
+                                    font=ctk.CTkFont(size=20, weight="bold"))
+            name_label.pack(pady=(0, 5))
+            
+            # Description
+            desc_label = ctk.CTkLabel(module_card, text=description, 
+                                    font=ctk.CTkFont(size=13),
+                                    text_color=("gray60", "gray40"),
+                                    wraplength=250)
+            desc_label.pack(pady=(0, 15), padx=20)
+            
+            # Launch button
+            launch_btn = ctk.CTkButton(module_card, text=f"Open {name}", 
+                                      command=lambda n=name: self.on_module_select(n),
+                                      fg_color=color, hover_color=self._darken_color(color),
+                                      height=40, width=180,
+                                      font=ctk.CTkFont(size=14, weight="bold"))
+            launch_btn.pack(pady=(0, 25))
+        
+        # Footer with warning
+        footer_frame = ctk.CTkFrame(main_container, corner_radius=10, 
+                                   fg_color=("orange", "darkorange"))
+        footer_frame.pack(fill="x", pady=(10, 0))
+        
+        warning_label = ctk.CTkLabel(footer_frame, 
+                                    text="⚠️ Educational Use Only • Always obtain proper authorization before security testing",
+                                    font=ctk.CTkFont(size=12, weight="bold"),
+                                    text_color="white")
+        warning_label.pack(pady=12)
+    
+    def _darken_color(self, hex_color):
+        """Darken a hex color for hover effect"""
+        # Simple darkening by reducing RGB values
+        hex_color = hex_color.lstrip('#')
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        r = max(0, int(r * 0.7))
+        g = max(0, int(g * 0.7))
+        b = max(0, int(b * 0.7))
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+
 class MemoryProgressCard(ctk.CTkFrame):
     """Memory card with progress bar showing usage"""
     
@@ -798,7 +903,7 @@ class MainApplication(ctk.CTk):
         super().__init__()
                 
         self.title("Local Security Toolkit")
-        self.geometry("1200x820")
+        self.geometry("1200x900")
                 
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -807,13 +912,14 @@ class MainApplication(ctk.CTk):
                 
         self.center_window()
                 
-        self.show_frame("System Info")
+        # Show Welcome screen by default
+        self.show_frame("Welcome")
     
     def center_window(self):
         """Center the window on screen"""
         self.update_idletasks()
         width = 1200
-        height = 820
+        height = 900
         x = (self.winfo_screenwidth() // 2) - (width // 2)
         y = (self.winfo_screenheight() // 2) - (height // 2)
         self.geometry(f"{width}x{height}+{x}+{y}")
@@ -834,6 +940,7 @@ class MainApplication(ctk.CTk):
                 
         self.sidebar_buttons = {}
         tools = [
+            "Welcome",
             "System Info",
             "Network Traffic",
             "Port Scanner",
@@ -852,6 +959,7 @@ class MainApplication(ctk.CTk):
         self.content_frame.grid(row=0, column=1, sticky="nsew")
                 
         self.frames = {}
+        self.frames["Welcome"] = WelcomeFrame(self.content_frame, on_module_select=self.show_frame)
         self.frames["System Info"] = SystemInfoFrame(self.content_frame)
         self.frames["Network Traffic"] = NetworkTrafficFrame(self.content_frame)
         self.frames["Port Scanner"] = PortScannerFrame(self.content_frame)

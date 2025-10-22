@@ -188,16 +188,6 @@ pip install --upgrade customtkinter psutil scapy
 
 ---
 
-## Documentation
-
-Additional documentation is available in the repository:
-- **QUICKSTART.md** - Quick setup guide
-- **API_REFERENCE.md** - Complete API documentation
-- **DEVELOPMENT_GUIDE.md** - Developer guidelines
-- **ARCHITECTURE.md** - System design details
-
----
-
 ## License & Disclaimer
 
 This project is intended for educational purposes as part of the MO-IT142 course. The authors are not responsible for any misuse or damage caused by this software. Always ensure you have proper authorization before conducting any security testing.
@@ -208,4 +198,4 @@ This project is intended for educational purposes as part of the MO-IT142 course
 **Project:** Milestone 2  
 **Authors:** Maricon Caluya and Jannine Claire Celocia  
 **Repository:** [github.com/JCCelocia/SSP-MS2](https://github.com/JCCelocia/SSP-MS2)  
-**Year:** 2024
+**Year:** 2025

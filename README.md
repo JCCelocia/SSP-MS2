@@ -1,4 +1,4 @@
-# Local Security Toolkit - Enhanced with Welcome Screen
+# Local Security Toolkit
 
 A comprehensive GUI application for system monitoring and network security testing, built with Python and CustomTkinter.
 
@@ -10,34 +10,9 @@ A comprehensive GUI application for system monitoring and network security testi
 
 ---
 
-## 🆕 What's New - Welcome Screen
-
-The application now features a **professional welcome screen** that greets users when they launch the application!
-
-### Features of the Welcome Screen:
-- **Visual greeting** with toolkit branding
-- **Interactive module cards** with color-coded themes:
-  - 💻 System Info (Blue) - Monitor system resources
-  - 🌐 Network Traffic (Green) - Capture network packets  
-  - 🔍 Port Scanner (Orange) - Scan ports and services
-  - ℹ️ About (Purple) - Learn about the toolkit
-- **One-click access** to any module
-- **Educational disclaimer** reminder
-- **Course information** display
-- **Modern dark theme** matching the application
-
-### User Experience:
-1. Launch the application with `python main.py`
-2. See the welcome screen with module selection cards
-3. Click any "Open [Module]" button to jump directly to that tool
-4. Use the sidebar to navigate between modules at any time
-5. Return to the welcome screen by clicking "Welcome" in the sidebar
-
----
-
 ## Overview
 
-Local Security Toolkit is an educational cybersecurity application designed for system monitoring and authorized security testing. It provides a modern, dark-themed GUI for performing common security assessments and system diagnostics.
+Local Security Toolkit is an educational cybersecurity application designed for system monitoring and authorized security testing. It provides a modern, dark-themed GUI with an intuitive welcome screen for performing common security assessments and system diagnostics.
 
 **Purpose:** Educational and authorized security testing only
 
@@ -45,11 +20,9 @@ Local Security Toolkit is an educational cybersecurity application designed for 
 
 ## Features
 
-### 1. Welcome Screen (NEW!)
-- Modern, professional main menu
-- Quick access to all modules
-- Color-coded module cards with descriptions
-- Educational reminders and course information
+### 1. Welcome Screen
+- Modern main menu with module selection
+- Quick access to all tools
 
 ### 2. System Information
 - Display operating system details
@@ -127,7 +100,7 @@ python main.py
 
 ## Usage
 
-### Welcome Screen (Starting Point)
+### Welcome Screen
 1. Launch the application with `python main.py`
 2. You'll see the welcome screen with all available modules
 3. Click on any module card to launch that tool
@@ -157,12 +130,11 @@ python main.py
 ---
 
 ## Project Structure
-
 ```
 SSP-MS2/
 ├── main.py              # Application entry point
 ├── backend.py           # Backend logic and data processing
-├── frontend.py          # GUI components and layouts (includes WelcomeFrame)
+├── frontend.py          # GUI components and layouts
 ├── requirements.txt     # Python dependencies
 └── README.md           # This file
 ```
@@ -176,18 +148,12 @@ SSP-MS2/
 - **Threading:** Daemon threads for long operations
 - **UI Framework:** CustomTkinter (dark theme)
 - **Resource Management:** Context managers for socket cleanup
-- **Navigation:** Multi-frame system with central welcome hub
 
 ### Key Technologies
 - **GUI:** CustomTkinter
 - **System Monitoring:** psutil
 - **Network Analysis:** scapy
 - **Networking:** socket, threading
-
-### New Components
-- **WelcomeFrame:** Main menu with module selection interface
-- **Color-coded modules:** Visual distinction for different tools
-- **Enhanced navigation:** Sidebar with Welcome option
 
 ---
 
@@ -206,7 +172,6 @@ SSP-MS2/
 - Confirmation dialogs for operations
 - Timeout protection on network operations
 - Rate limiting to avoid overwhelming targets
-- Educational disclaimers on welcome screen
 
 ---
 
@@ -235,29 +200,6 @@ python --version  # Should be 3.7+
 # Reinstall dependencies
 pip install --upgrade customtkinter psutil scapy
 ```
-
-### Welcome screen not showing
-- Make sure you're running the latest version of the code
-- Check that frontend.py includes the WelcomeFrame class
-- Verify the MainApplication class calls `self.show_frame("Welcome")`
-
----
-
-## Changelog
-
-### Version 1.1 (Current)
-- ✨ Added professional Welcome Screen with module selection
-- ✨ Improved navigation with sidebar integration
-- ✨ Color-coded module cards for better UX
-- ✨ Course information display on welcome screen
-- ✨ Enhanced visual design and user flow
-
-### Version 1.0
-- Initial release with core functionality
-- System Information module
-- Network Traffic Analyzer
-- Port Scanner
-- About page
 
 ---
 

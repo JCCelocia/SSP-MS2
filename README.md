@@ -7,19 +7,6 @@ A comprehensive GUI application for system monitoring and network security testi
 > **Milestone:** 2  
 > **Authors:** Maricon Caluya and Jannine Claire Celocia
 
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Architecture](#architecture)
-- [Code Structure](#code-structure)
-- [Security Considerations](#security-considerations)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-
 ## 🎯 Overview
 
 Local Security Toolkit is an educational cybersecurity application designed for system monitoring and authorized security testing. It provides a modern, dark-themed GUI for performing common security assessments and system diagnostics.

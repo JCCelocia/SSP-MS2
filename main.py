@@ -1,11 +1,10 @@
 """
 Local Security Toolkit
-A GUI application for system monitoring and security testing.
+A GUI application for network monitoring and security testing.
 
 Requirements:
 - customtkinter: pip install customtkinter
-- psutil (optional): pip install psutil
-- scapy (optional): pip install scapy
+- scapy: pip install scapy
 
 Usage:
 python main.py
@@ -33,11 +32,6 @@ def check_dependencies():
     missing_deps = []
     
     try:
-        import psutil
-    except ImportError:
-        missing_deps.append("psutil")
-    
-    try:
         import scapy
     except ImportError:
         missing_deps.append("scapy")
@@ -45,20 +39,11 @@ def check_dependencies():
     if missing_deps:
         # Show warning but don't exit - these are optional
         dep_list = "\n".join([f"- {dep}" for dep in missing_deps])
-        affected_features = []
-        
-        if "psutil" in missing_deps:
-            affected_features.append("- System Information")
-        
-        if "scapy" in missing_deps:
-            affected_features.append("- Network Traffic Analyzer")
-        
-        feature_list = "\n".join(affected_features)
         
         msgbox.showwarning(
-            "Optional Dependencies Missing",
-            f"The following packages are not installed:\n{dep_list}\n\n"
-            f"Some features will have limited functionality:\n{feature_list}\n\n"
+            "Required Dependency Missing",
+            f"The following package is not installed:\n{dep_list}\n\n"
+            f"Network Traffic Analyzer requires scapy.\n\n"
             f"To install: pip install {' '.join(missing_deps)}"
         )
 
@@ -100,7 +85,7 @@ def main():
         
         # Start the GUI
         print("Starting Local Security Toolkit...")
-        print("Note: Some features may require administrator/root privileges")
+        print("Note: Network capture requires administrator/root privileges")
         app.mainloop()
         
     except KeyboardInterrupt:

@@ -16,42 +16,10 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 try:
-    from scapy.all import sniff, IP, TCP, UDP, ICMP, IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, ICMPv6ND_NS, ICMPv6ND_NA
+    from scapy.all import sniff, IP, TCP, UDP, ICMP, IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, ICMPv6ND_NS, ICMPv6ND_NA, get_if_list, conf
     SCAPY_AVAILABLE = True
 except ImportError:
     SCAPY_AVAILABLE = False
-
-
-class SystemInfoBackend:
-    """Backend for system information retrieval"""
-    
-    def get_system_info(self) -> dict:
-        """Get system information"""
-        if not PSUTIL_AVAILABLE:
-            return {
-                'platform': platform.system(),
-                'platform_release': platform.release(),
-                'cpu_count': 'N/A (psutil required)',
-                'total_memory': 'N/A (psutil required)',
-                'available_memory': 'N/A (psutil required)',
-                'uptime_seconds': 'N/A (psutil required)'
-            }
-        
-        try:
-            memory = psutil.virtual_memory()
-            boot_time = psutil.boot_time()
-            uptime = time.time() - boot_time
-            
-            return {
-                'platform': platform.system(),
-                'platform_release': platform.release(),
-                'cpu_count': psutil.cpu_count(logical=True),
-                'total_memory': f"{memory.total / (1024**3):.2f} GB",
-                'available_memory': f"{memory.available / (1024**3):.2f} GB",
-                'uptime_seconds': f"{uptime:.0f} seconds ({uptime/3600:.1f} hours)"
-            }
-        except Exception as e:
-            return {'error': f"Error retrieving system info: {str(e)}"}
 
 
 class NetworkTrafficBackend:
@@ -63,6 +31,7 @@ class NetworkTrafficBackend:
         self.packet_count = 0
         self.protocol_filter = "All"
         self.port_filter = ""
+        self.selected_interface = None
         
         # Callback functions for UI updates
         self.on_packet_captured: Optional[Callable[[dict], None]] = None
@@ -80,6 +49,62 @@ class NetworkTrafficBackend:
         self.on_capture_error = on_capture_error
         self.on_capture_started = on_capture_started
         self.on_capture_stopped = on_capture_stopped
+    
+    def get_available_interfaces(self) -> List[Tuple[str, str]]:
+        """
+        Get list of available network interfaces with human-readable names
+        Returns: List of tuples (display_name, actual_interface_name)
+        """
+        if not SCAPY_AVAILABLE:
+            return [("Default (Auto-detect)", None)]
+        
+        try:
+            interfaces = []
+            
+            # Try to use psutil for better interface information
+            if PSUTIL_AVAILABLE:
+                import psutil
+                net_if_addrs = psutil.net_if_addrs()
+                net_if_stats = psutil.net_if_stats()
+                
+                for iface_name, addrs in net_if_addrs.items():
+                    # Skip loopback interfaces in the list (but keep them available)
+                    # Get interface status
+                    is_up = net_if_stats.get(iface_name, None)
+                    if is_up and not is_up.isup:
+                        continue  # Skip interfaces that are down
+                    
+                    # Get IP address if available
+                    ip_addr = None
+                    for addr in addrs:
+                        if addr.family == 2:  # AF_INET (IPv4)
+                            ip_addr = addr.address
+                            break
+                    
+                    # Create display name
+                    if ip_addr:
+                        display_name = f"{iface_name} ({ip_addr})"
+                    else:
+                        display_name = iface_name
+                    
+                    interfaces.append((display_name, iface_name))
+            else:
+                # Fallback to scapy's interface list
+                scapy_interfaces = get_if_list()
+                for iface in scapy_interfaces:
+                    interfaces.append((iface, iface))
+            
+            # Add default option at the beginning
+            interfaces.insert(0, ("Default (Auto-detect)", None))
+            
+            return interfaces if interfaces else [("Default (Auto-detect)", None)]
+            
+        except Exception as e:
+            return [("Default (Auto-detect)", None)]
+    
+    def set_interface(self, interface: Optional[str]):
+        """Set the network interface to capture on"""
+        self.selected_interface = interface
     
     def update_filters(self, protocol_filter: str, port_filter: str):
         """Update filters in real-time during capture"""
@@ -120,9 +145,17 @@ class NetworkTrafficBackend:
     def _capture_packets_thread(self):
         """Capture packets using Scapy in separate thread"""
         try:
-            sniff(prn=lambda pkt: self._process_packet(pkt),
-                  store=False,
-                  stop_filter=lambda x: not self.is_capturing)
+            # Set interface if specified
+            kwargs = {
+                'prn': lambda pkt: self._process_packet(pkt),
+                'store': False,
+                'stop_filter': lambda x: not self.is_capturing
+            }
+            
+            if self.selected_interface:
+                kwargs['iface'] = self.selected_interface
+            
+            sniff(**kwargs)
         except PermissionError:
             if self.on_capture_error:
                 self.on_capture_error("Administrator/root privileges required to capture packets")

@@ -6,191 +6,8 @@ import tkinter.messagebox as msgbox
 from typing import Optional
 
 from backend import (
-    SystemInfoBackend, PortScannerBackend, NetworkTrafficBackend
+    PortScannerBackend, NetworkTrafficBackend
 )
-
-
-class WelcomeFrame(ctk.CTkFrame):
-    """Welcome/Main Menu Frame"""
-    
-    def __init__(self, parent, on_module_select):
-        super().__init__(parent, corner_radius=15)
-        self.on_module_select = on_module_select
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-        
-        # Header section with welcome message
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(20, 10))
-        
-        title = ctk.CTkLabel(header_frame, text="🛡️ Local Security Toolkit", 
-                           font=ctk.CTkFont(size=36, weight="bold"))
-        title.pack(pady=(0, 10))
-        
-        subtitle = ctk.CTkLabel(header_frame, text="Welcome! Select a security tool to get started", 
-                              font=ctk.CTkFont(size=16), text_color=("gray60", "gray40"))
-        subtitle.pack()
-        
-        # Course info
-        course_info = ctk.CTkLabel(header_frame, 
-                                  text="MO-IT142 - Security Script Programming | Milestone 2",
-                                  font=ctk.CTkFont(size=12), text_color=("gray50", "gray50"))
-        course_info.pack(pady=(5, 0))
-        
-        # Module selection cards
-        cards_container = ctk.CTkFrame(main_container, fg_color="transparent")
-        cards_container.pack(fill="both", expand=True, pady=30)
-        
-        # Configure grid
-        cards_container.grid_columnconfigure(0, weight=1)
-        cards_container.grid_columnconfigure(1, weight=1)
-        cards_container.grid_rowconfigure(0, weight=1)
-        cards_container.grid_rowconfigure(1, weight=1)
-        
-        # Module data: (name, icon, description, color)
-        modules = [
-            ("System Info", "💻", "Monitor system resources, memory usage, and uptime", "#3B8ED0"),
-            ("Network Traffic", "🌐", "Capture and analyze network packets in real-time", "#2D8C5C"),
-            ("Port Scanner", "🔍", "Scan ports and identify running services", "#D97D0D"),
-            ("About", "ℹ️", "Learn more about the toolkit and usage guidelines", "#7D5BA6")
-        ]
-        
-        for idx, (name, icon, description, color) in enumerate(modules):
-            row = idx // 2
-            col = idx % 2
-            
-            # Create module card
-            module_card = ctk.CTkFrame(cards_container, corner_radius=15, 
-                                      fg_color=("gray80", "gray20"))
-            module_card.grid(row=row, column=col, sticky="nsew", 
-                           padx=15, pady=15)
-            
-            # Icon
-            icon_label = ctk.CTkLabel(module_card, text=icon, 
-                                    font=ctk.CTkFont(size=48))
-            icon_label.pack(pady=(25, 10))
-            
-            # Module name
-            name_label = ctk.CTkLabel(module_card, text=name, 
-                                    font=ctk.CTkFont(size=20, weight="bold"))
-            name_label.pack(pady=(0, 5))
-            
-            # Description
-            desc_label = ctk.CTkLabel(module_card, text=description, 
-                                    font=ctk.CTkFont(size=13),
-                                    text_color=("gray60", "gray40"),
-                                    wraplength=250)
-            desc_label.pack(pady=(0, 15), padx=20)
-            
-            # Launch button
-            launch_btn = ctk.CTkButton(module_card, text=f"Open {name}", 
-                                      command=lambda n=name: self.on_module_select(n),
-                                      fg_color=color, hover_color=self._darken_color(color),
-                                      height=40, width=180,
-                                      font=ctk.CTkFont(size=14, weight="bold"))
-            launch_btn.pack(pady=(0, 25))
-        
-        # Footer with warning
-        footer_frame = ctk.CTkFrame(main_container, corner_radius=10, 
-                                   fg_color=("orange", "darkorange"))
-        footer_frame.pack(fill="x", pady=(10, 0))
-        
-        warning_label = ctk.CTkLabel(footer_frame, 
-                                    text="⚠️ Educational Use Only • Always obtain proper authorization before security testing",
-                                    font=ctk.CTkFont(size=12, weight="bold"),
-                                    text_color="white")
-        warning_label.pack(pady=12)
-    
-    def _darken_color(self, hex_color):
-        """Darken a hex color for hover effect"""
-        # Simple darkening by reducing RGB values
-        hex_color = hex_color.lstrip('#')
-        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        r = max(0, int(r * 0.7))
-        g = max(0, int(g * 0.7))
-        b = max(0, int(b * 0.7))
-        return f'#{r:02x}{g:02x}{b:02x}'
-
-
-class MemoryProgressCard(ctk.CTkFrame):
-    """Memory card with progress bar showing usage"""
-    
-    def __init__(self, parent, title, description=None):
-        super().__init__(parent, corner_radius=10)
-        self.configure(fg_color=("gray85", "gray25"))
-        
-        # Title 
-        self.title_label = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=14, weight="bold"))
-        self.title_label.pack(pady=(15, 5))
-        
-        # Progress bar
-        self.progress_bar = ctk.CTkProgressBar(self, width=200, height=20)
-        self.progress_bar.pack(pady=(10, 10), padx=20)
-        
-        # Memory usage text 
-        self.usage_label = ctk.CTkLabel(self, text="0.0 GB used / 0.0 GB total", 
-                                       font=ctk.CTkFont(size=24, weight="bold"))
-        self.usage_label.pack(pady=5)
-        
-        # Description
-        if description:
-            self.desc_label = ctk.CTkLabel(self, text=description, font=ctk.CTkFont(size=18), 
-                                         text_color=("gray55", "gray45"))
-            self.desc_label.pack(pady=(0, 15))
-        else:
-            ctk.CTkLabel(self, text="").pack(pady=(0, 10))
-    
-    def update_memory(self, total_gb, available_gb):
-        """Update the memory progress bar and text"""
-        try:
-            used_gb = total_gb - available_gb if total_gb > 0 else 0
-            usage_percentage = (used_gb / total_gb) if total_gb > 0 else 0
-            
-            self.progress_bar.set(max(0, min(1, usage_percentage)))
-                        
-            self.usage_label.configure(text=f"{used_gb:.1f} / {total_gb:.1f} GB")
-            
-            # Color the progress bar based on usage
-            if usage_percentage < 0.6:  # < 60% usage - green
-                self.progress_bar.configure(progress_color="#4CAF50")
-            elif usage_percentage < 0.8:  # 60-80% usage - orange
-                self.progress_bar.configure(progress_color="#FF9800")
-            else:  # > 80% usage - red
-                self.progress_bar.configure(progress_color="#F44336")
-                
-        except Exception as e:
-            # Fallback on error
-            self.progress_bar.set(0)
-            self.usage_label.configure(text="Memory info unavailable")
-
-
-class InfoCard(ctk.CTkFrame):
-    """Card-style info display with proper visual hierarchy"""
-    
-    def __init__(self, parent, title, value, description=None, value_color=None):
-        super().__init__(parent, corner_radius=10)
-        self.configure(fg_color=("gray85", "gray25"))
-        
-        # Title
-        title_label = ctk.CTkLabel(self, text=title, font=ctk.CTkFont(size=14, weight="bold"))
-        title_label.pack(pady=(15, 5))
-        
-        # Main value 
-        value_label = ctk.CTkLabel(self, text=str(value), font=ctk.CTkFont(size=24, weight="bold"))
-        if value_color:
-            value_label.configure(text_color=value_color)
-        value_label.pack(pady=5)
-        
-        # Description/subtitle
-        if description:
-            desc_label = ctk.CTkLabel(self, text=description, font=ctk.CTkFont(size=18), 
-                                    text_color=("gray55", "gray45"))
-            desc_label.pack(pady=(0, 15))
-        else:
-            ctk.CTkLabel(self, text="").pack(pady=(0, 10))
 
 
 class TableFrame(ctk.CTkFrame):
@@ -255,157 +72,18 @@ class TableFrame(ctk.CTkFrame):
             self.tree.tag_configure(tag, **config)
 
 
-class SystemInfoFrame(ctk.CTkFrame):
-    """System Information Frame"""
-    
-    def __init__(self, parent):
-        super().__init__(parent, corner_radius=15)
-        self.backend = SystemInfoBackend()
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-                
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 25))
-        
-        title = ctk.CTkLabel(header_frame, text="System Information", 
-                           font=ctk.CTkFont(size=28, weight="bold"))
-        title.pack(side="left")
-        
-        subtitle = ctk.CTkLabel(header_frame, text="View details about your computer", 
-                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
-        subtitle.pack(side="left", padx=(15, 0), anchor="s")
-        
-        refresh_btn = ctk.CTkButton(header_frame, text="Refresh", command=self.refresh_info,
-                                  height=35, width=120)
-        refresh_btn.pack(side="right")
-                
-        self.cards_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        self.cards_frame.pack(fill="both", expand=True)
-                
-        for i in range(3):
-            self.cards_frame.grid_columnconfigure(i, weight=1, uniform="col")
-        for i in range(2):
-            self.cards_frame.grid_rowconfigure(i, weight=1, uniform="row")
-                
-        self.refresh_info()
-    
-    def refresh_info(self):
-        """Refresh system information with card display"""
-        
-        for widget in self.cards_frame.winfo_children():
-            widget.destroy()
-        
-        try:
-            info = self.backend.get_system_info()
-            
-            if 'error' in info:
-                error_frame = ctk.CTkFrame(self.cards_frame, fg_color=("red", "darkred"))
-                error_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=10, pady=10)
-                
-                error_label = ctk.CTkLabel(error_frame, text="psutil package required for full functionality",
-                                         font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
-                error_label.pack(pady=20)
-                
-                install_label = ctk.CTkLabel(error_frame, text="Install with: pip install psutil",
-                                           font=ctk.CTkFont(size=12), text_color="white")
-                install_label.pack(pady=(0, 20))
-                return
-            
-            # Parse memory values for progress bar
-            total_memory_str = info.get('total_memory', '0 GB')
-            available_memory_str = info.get('available_memory', '0 GB')
-            
-            # Extract numeric values
-            try:
-                total_gb = float(total_memory_str.split()[0]) if 'GB' in total_memory_str else 0
-                available_gb = float(available_memory_str.split()[0]) if 'GB' in available_memory_str else 0
-            except (ValueError, IndexError):
-                total_gb = 0
-                available_gb = 0
-            
-            # Format uptime with color coding
-            uptime_info = self.format_uptime(info.get('uptime_seconds', 'N/A'))
-            if isinstance(uptime_info, tuple):
-                uptime_text, uptime_color = uptime_info
-            else:
-                uptime_text, uptime_color = uptime_info, None
-            
-            # Add restart advice for long uptimes
-            uptime_desc = "Time since boot"
-            if uptime_color == "red":
-                uptime_desc += " - Consider restarting"
-            
-            # Create regular info cards with proper hierarchy
-            card_data = [
-                ("Operating System", info.get('platform', 'Unknown'), 
-                 f"Version: {info.get('platform_release', 'Unknown')}", None),
-                ("Processor Cores", info.get('cpu_count', 'N/A'), "Logical processors", None),
-                ("System Uptime", uptime_text, uptime_desc, uptime_color),
-                ("Status", "Running", "System operational", "green")
-            ]
-                        
-            card_positions = [0, 1, 3, 4]  
-            for i, card_info in enumerate(card_data):
-                if i < len(card_positions):
-                    pos = card_positions[i]
-                    row = pos // 3
-                    col = pos % 3
-                    title, value, desc, color = card_info
-                    card = InfoCard(self.cards_frame, title, value, desc, color)
-                    card.grid(row=row, column=col, sticky="nsew", padx=10, pady=10)
-                        
-            memory_card = MemoryProgressCard(self.cards_frame, "Memory Usage", "System RAM")
-            memory_card.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
-            memory_card.update_memory(total_gb, available_gb)
-                
-        except Exception as e:
-            error_frame = ctk.CTkFrame(self.cards_frame, fg_color=("red", "darkred"))
-            error_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=10, pady=10)
-            
-            error_label = ctk.CTkLabel(error_frame, text=f"Error: {str(e)}",
-                                     font=ctk.CTkFont(size=14), text_color="white")
-            error_label.pack(pady=20)
-    
-    def format_uptime(self, uptime_str):
-        """Format uptime string for better readability and return color info"""
-        if isinstance(uptime_str, str) and 'seconds' in uptime_str:
-            try:
-                seconds = float(uptime_str.split()[0])
-                hours = seconds / 3600
-                days = hours / 24
-                
-                if days >= 1:
-                    formatted_time = f"{days:.1f} days"
-                elif hours >= 1:
-                    formatted_time = f"{hours:.1f} hours"
-                else:
-                    formatted_time = f"{seconds/60:.0f} minutes"
-                
-                # Determine color based on uptime
-                if days < 7:
-                    color = "green"
-                elif days < 14:
-                    color = "orange"
-                else:
-                    color = "red"
-                
-                return formatted_time, color
-            except:
-                return uptime_str, None
-        return uptime_str, None
-
-
 class NetworkTrafficFrame(ctk.CTkFrame):
     """Network Traffic Analyzer Frame"""
     
     def __init__(self, parent):
         super().__init__(parent, corner_radius=15)
         self.backend = NetworkTrafficBackend()
+        self.interface_mapping = {}  # Maps display names to actual interface names
+        self.all_packets = []  # master list of dicts from backend
+        self.search_var = tk.StringVar(value="")
         self.setup_ui()
         self.setup_callbacks()
+        self.load_interfaces()
     
     def setup_ui(self):
         main_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -422,7 +100,7 @@ class NetworkTrafficFrame(ctk.CTkFrame):
                               font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
         subtitle.pack(side="left", padx=(15, 0), anchor="s")
                 
-        warning = ctk.CTkLabel(main_container, text="Requires administrator/root privileges • Only capture on networks you own or have permission to monitor", 
+        warning = ctk.CTkLabel(main_container, text="⚠️ Requires administrator/root privileges • Only capture on networks you own or have permission to monitor", 
                               text_color="orange", font=ctk.CTkFont(size=12, weight="bold"))
         warning.pack(pady=(0, 15))
                 
@@ -440,6 +118,28 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         ctk.CTkLabel(controls_section, text="Capture Controls", 
                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
         
+        # Interface selection row
+        interface_row = ctk.CTkFrame(controls_section, fg_color="transparent")
+        interface_row.pack(pady=(0, 10))
+        
+        ctk.CTkLabel(interface_row, text="Network Interface:", 
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(20, 5))
+        self.interface_var = tk.StringVar(value="Default (Auto-detect)")
+        self.interface_dropdown = ctk.CTkOptionMenu(interface_row, variable=self.interface_var,
+                                                    values=["Default (Auto-detect)"], width=300,
+                                                    command=self.on_interface_changed)
+        self.interface_dropdown.pack(side="left", padx=(0, 10))
+        
+        refresh_interfaces_btn = ctk.CTkButton(interface_row, text="↻ Refresh", width=80, height=28,
+                                              command=self.load_interfaces,
+                                              font=ctk.CTkFont(size=12))
+        refresh_interfaces_btn.pack(side="left", padx=(0, 10))
+        
+        # Add helpful hint
+        hint_label = ctk.CTkLabel(interface_row, text="💡 Select the network adapter to monitor",
+                                 font=ctk.CTkFont(size=11), text_color=("gray50", "gray50"))
+        hint_label.pack(side="left", padx=(10, 0))
+        
         # Filter row
         filter_row = ctk.CTkFrame(controls_section, fg_color="transparent")
         filter_row.pack(pady=(0, 10))
@@ -453,6 +153,34 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         ctk.CTkLabel(filter_row, text="Port:", font=ctk.CTkFont(size=12)).pack(side="left", padx=(0, 5))
         self.port_entry = ctk.CTkEntry(filter_row, width=80, placeholder_text="80")
         self.port_entry.pack(side="left")
+        
+        # Bind live changes to backend filters
+        self.protocol_var.trace_add("write", lambda *_: self.on_filter_changed())
+        self.port_entry.bind("<KeyRelease>", lambda _e: self.on_filter_changed())
+        
+        # Search row
+        search_row = ctk.CTkFrame(controls_section, fg_color="transparent")
+        search_row.pack(pady=(0, 10))
+        
+        ctk.CTkLabel(search_row, text="Search:", font=ctk.CTkFont(size=12)).pack(side="left", padx=(20, 5))
+        self.search_entry = ctk.CTkEntry(search_row, width=240, textvariable=self.search_var, placeholder_text="ip, protocol, port…  (e.g., tcp or src:192.168 or dport:443)")
+        self.search_entry.pack(side="left")
+        
+        # Info ("?") button for search help
+        info_btn = ctk.CTkButton(
+            search_row,
+            text="?",
+            width=28,
+            height=28,
+            fg_color="#3B8ED0",
+            hover_color="#1F6AA5",
+            command=self.show_search_help,
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        info_btn.pack(side="left", padx=(8, 0))
+        
+        # react to typing
+        self.search_var.trace_add("write", lambda *_: self.refresh_table())
         
         # Button row
         button_row = ctk.CTkFrame(controls_section, fg_color="transparent")
@@ -478,7 +206,7 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         status_inner = ctk.CTkFrame(status_section, fg_color="transparent")
         status_inner.pack(fill="x", padx=20, pady=15)
         
-        self.status_label = ctk.CTkLabel(status_inner, text="Ready to capture",
+        self.status_label = ctk.CTkLabel(status_inner, text="✅ Ready to capture - Select interface and click Start",
                                         font=ctk.CTkFont(size=12), text_color=("gray60", "gray40"))
         self.status_label.pack(side="left")
         
@@ -513,6 +241,151 @@ class NetworkTrafficFrame(ctk.CTkFrame):
             'oddrow': {'background': '#2b2b2b'}
         })
     
+    def load_interfaces(self):
+        """Load available network interfaces"""
+        interfaces_data = self.backend.get_available_interfaces()
+        
+        # Clear the mapping
+        self.interface_mapping.clear()
+        
+        # Extract display names and create mapping
+        display_names = []
+        for display_name, actual_name in interfaces_data:
+            display_names.append(display_name)
+            self.interface_mapping[display_name] = actual_name
+        
+        # Update dropdown
+        if display_names:
+            self.interface_dropdown.configure(values=display_names)
+            # Set to first interface (Default)
+            self.interface_var.set(display_names[0])
+            # Set backend interface
+            self.backend.set_interface(self.interface_mapping[display_names[0]])
+            self.status_label.configure(text=f"Interface: {display_names[0]}")
+        else:
+            self.interface_dropdown.configure(values=["Default (Auto-detect)"])
+            self.interface_var.set("Default (Auto-detect)")
+            self.backend.set_interface(None)
+    
+    def on_interface_changed(self, display_name):
+        """Called when interface selection changes"""
+        # Get actual interface name from mapping
+        actual_interface = self.interface_mapping.get(display_name, None)
+        self.backend.set_interface(actual_interface)
+        self.status_label.configure(text=f"Interface: {display_name}")
+    
+    def show_search_help(self):
+        """Show popup explaining search syntax"""
+        msg = (
+            "🔍 How to Use Search\n\n"
+            "• Type any word to search across all packet details.\n"
+            "  Example: tcp, udp, 192.168\n\n"
+            "• Use field filters:\n"
+            "  src:<ip>    → filter by source IP\n"
+            "  dst:<ip>    → filter by destination IP\n"
+            "  sport:<num> → source port\n"
+            "  dport:<num> → destination port\n\n"
+            "• Use comparisons:\n"
+            "  size>500 → packets larger than 500 bytes\n"
+            "  size<200 → packets smaller than 200 bytes\n"
+            "  size:1-100 → packets between that range\n\n"
+            "• Combining filters:\n"
+            "  You can type several filters together — just separate them with spaces.\n"
+            "  Don't use commas or punctuation between filters.\n"
+            "  Example:\n"
+            "  tcp dport:443 size:100-300\n"
+            "  (shows TCP packets going to port 443 and between 100–300 bytes)\n\n"
+            "  You can also combine IP and port filters like:\n"
+            "  src:192.168.1.5 dport:80 size>200\n"
+            "  (shows packets from 192.168.1.5 going to port 80 that are larger than 200 bytes)\n\n"
+            "💡 Tip: You can keep typing while capturing — the display updates instantly!"
+        )
+        msgbox.showinfo("Search Help", msg)
+    
+    def packet_matches_query(self, pkt: dict, q: str) -> bool:
+        """
+        Simple query language:
+          - plain text matches any column (case-insensitive)
+          - key:value matches a specific field (keys: src, dst, proto, sport, dport, size)
+        Examples: 'tcp', 'src:192.168', 'dport:53', 'size>500'
+        """
+        if not q:
+            return True
+
+        q = q.strip().lower()
+        tokens = q.split()
+
+        # build a lowercase view of fields
+        fields = {
+            "time": pkt["timestamp"].lower(),
+            "src": pkt["src_ip"].lower(),
+            "dst": pkt["dst_ip"].lower(),
+            "proto": pkt["protocol"].lower(),
+            "sport": pkt["src_port"].lower(),
+            "dport": pkt["dst_port"].lower(),
+            "size": str(pkt["size"]).lower(),
+            # everything concatenated for loose text matches
+            "_all": " ".join([
+                pkt["timestamp"], pkt["src_ip"], pkt["dst_ip"],
+                pkt["protocol"], pkt["src_port"], pkt["dst_port"],
+                str(pkt["size"])
+            ]).lower()
+        }
+
+        def match_token(tok: str) -> bool:
+            # key:value
+            if ":" in tok:
+                key, val = tok.split(":", 1)
+                key = key.strip()
+                val = val.strip()
+                
+                # Handle size range (size:X-Y)
+                if key == "size" and "-" in val:
+                    try:
+                        min_size, max_size = val.split("-", 1)
+                        packet_size = int(fields["size"])
+                        return int(min_size) <= packet_size <= int(max_size)
+                    except:
+                        return False
+                
+                if key in fields:
+                    return val in fields[key]
+                return val in fields["_all"]
+
+            # numeric comparisons on size
+            if tok.startswith("size>"):
+                try:
+                    return int(fields["size"]) > int(tok[5:])
+                except:
+                    return False
+            if tok.startswith("size<"):
+                try:
+                    return int(fields["size"]) < int(tok[5:])
+                except:
+                    return False
+
+            # plain substring over any column
+            return tok in fields["_all"]
+
+        # AND over tokens
+        return all(match_token(t) for t in tokens)
+
+    def refresh_table(self):
+        """Rebuild table from self.all_packets using current search."""
+        self.packet_table.clear()
+        query = self.search_var.get()
+        count = 0
+        for pkt in self.all_packets:
+            if self.packet_matches_query(pkt, query):
+                tag = 'evenrow' if count % 2 == 0 else 'oddrow'
+                self.packet_table.insert([
+                    pkt['timestamp'], pkt['src_ip'], pkt['dst_ip'], pkt['protocol'],
+                    pkt['src_port'], pkt['dst_port'], str(pkt['size'])
+                ], tags=[tag])
+                count += 1
+        # keep the "Packets:" counter tied to total captured (unchanged)
+        self.packet_count_label.configure(text=f"Packets: {self.backend.get_packet_count()}")
+    
     def setup_callbacks(self):
         """Setup backend callbacks"""
         self.backend.set_callbacks(
@@ -537,44 +410,53 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         if self.backend.start_capture():
             self.start_btn.configure(state="disabled")
             self.stop_btn.configure(state="normal")
+            self.interface_dropdown.configure(state="disabled")
     
     def stop_capture(self):
         """Stop packet capture"""
         self.backend.stop_capture()
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled")
+        self.interface_dropdown.configure(state="normal")
     
     def clear_display(self):
         """Clear packet display"""
         self.packet_table.clear()
+        self.all_packets = []  # reset stored packets
         self.backend.packet_count = 0
         self.packet_count_label.configure(text="Packets: 0")
-        self.status_label.configure(text="Display cleared")
+        self.status_label.configure(text="✨ Display cleared - Ready to capture")
     
     # Callback methods
     def on_packet_captured(self, packet_data):
         """Called when a packet is captured"""
+        self.all_packets.append(packet_data)
+
         def update_ui():
-            count = self.backend.get_packet_count()
-            tag = 'evenrow' if count % 2 == 0 else 'oddrow'
-            
-            self.packet_table.insert([
-                packet_data['timestamp'],
-                packet_data['src_ip'],
-                packet_data['dst_ip'],
-                packet_data['protocol'],
-                packet_data['src_port'],
-                packet_data['dst_port'],
-                str(packet_data['size'])
-            ], tags=[tag])
-            
-            self.packet_count_label.configure(text=f"Packets: {count}")
-            
-            # Auto-scroll to bottom
-            children = self.packet_table.tree.get_children()
-            if children:
-                self.packet_table.tree.yview_moveto(1)
-        
+            count_total = self.backend.get_packet_count()
+            self.packet_count_label.configure(text=f"Packets: {count_total}")
+
+            # insert only if it matches current query; otherwise just keep it in all_packets
+            if self.packet_matches_query(packet_data, self.search_var.get()):
+                # compute row index among currently displayed rows for striping
+                displayed_rows = len(self.packet_table.tree.get_children())
+                tag = 'evenrow' if displayed_rows % 2 == 0 else 'oddrow'
+
+                self.packet_table.insert([
+                    packet_data['timestamp'],
+                    packet_data['src_ip'],
+                    packet_data['dst_ip'],
+                    packet_data['protocol'],
+                    packet_data['src_port'],
+                    packet_data['dst_port'],
+                    str(packet_data['size'])
+                ], tags=[tag])
+
+                # Auto-scroll to bottom
+                children = self.packet_table.tree.get_children()
+                if children:
+                    self.packet_table.tree.yview_moveto(1)
+
         self.after(0, update_ui)
     
     def on_capture_error(self, error_msg):
@@ -582,16 +464,18 @@ class NetworkTrafficFrame(ctk.CTkFrame):
         self.after(0, lambda: msgbox.showerror("Capture Error", error_msg))
         self.after(0, lambda: [
             self.start_btn.configure(state="normal"),
-            self.stop_btn.configure(state="disabled")
+            self.stop_btn.configure(state="disabled"),
+            self.interface_dropdown.configure(state="normal")
         ])
     
     def on_capture_started(self):
         """Called when capture starts"""
-        self.after(0, lambda: self.status_label.configure(text="Capturing packets..."))
+        display_name = self.interface_var.get()
+        self.after(0, lambda: self.status_label.configure(text=f"📡 Capturing on {display_name}..."))
     
     def on_capture_stopped(self):
         """Called when capture stops"""
-        self.after(0, lambda: self.status_label.configure(text="Capture stopped"))
+        self.after(0, lambda: self.status_label.configure(text="⏸️ Capture stopped"))
 
 
 class PortScannerFrame(ctk.CTkFrame):
@@ -620,7 +504,7 @@ class PortScannerFrame(ctk.CTkFrame):
         subtitle.pack(side="left", padx=(15, 0), anchor="s")
         
         
-        warning = ctk.CTkLabel(main_container, text="Only scan systems you own or have permission to test", 
+        warning = ctk.CTkLabel(main_container, text="⚠️ Only scan systems you own or have permission to test", 
                               text_color="orange", font=ctk.CTkFont(size=12, weight="bold"))
         warning.pack(pady=(0, 15))
                 
@@ -817,85 +701,6 @@ class PortScannerFrame(ctk.CTkFrame):
         self.after(0, lambda: msgbox.showerror("Scan Error", error))
 
 
-class AboutFrame(ctk.CTkFrame):
-    """About/Help Frame"""
-    
-    def __init__(self, parent):
-        super().__init__(parent, corner_radius=15)
-        self.setup_ui()
-    
-    def setup_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=30, pady=30)
-                
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill="x", pady=(0, 25))
-        
-        title = ctk.CTkLabel(header_frame, text="Local Security Toolkit", 
-                           font=ctk.CTkFont(size=28, weight="bold"))
-        title.pack()
-        
-        version = ctk.CTkLabel(header_frame, text="Version 1.0", 
-                             font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
-        version.pack(pady=(5, 0))
-                
-        content_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        content_frame.pack(fill="both", expand=True)
-                
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_columnconfigure(1, weight=1)
-                
-        overview_card = ctk.CTkFrame(content_frame, corner_radius=10)
-        overview_card.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
-        
-        ctk.CTkLabel(overview_card, text="Overview", 
-                   font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
-        
-        overview_text = """Security and system monitoring tools for educational and authorized testing purposes.
-This toolkit helps you monitor your system and test security configurations safely and responsibly."""
-        
-        ctk.CTkLabel(overview_card, text=overview_text, 
-                   font=ctk.CTkFont(size=14), wraplength=600).pack(pady=(0, 20))
-        
-        # Tools cards
-        tools_info = [
-            ("System Information", "View computer details like memory, processor cores, and uptime."),
-            ("Network Traffic Analyzer", "Capture and analyze network packets in real-time with protocol filtering."),
-            ("Port Scanner", "Check which network services are open. Only scan authorized systems."),
-        ]
-        
-        for i, (tool_name, description) in enumerate(tools_info):
-            row = (i // 2) + 1
-            col = i % 2
-            
-            tool_card = ctk.CTkFrame(content_frame, corner_radius=10)
-            tool_card.grid(row=row, column=col, sticky="nsew", 
-                         padx=(0 if col == 0 else 7, 7 if col == 0 else 0), pady=7)
-            
-            ctk.CTkLabel(tool_card, text=tool_name, 
-                       font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(15, 5))
-            
-            ctk.CTkLabel(tool_card, text=description, 
-                       font=ctk.CTkFont(size=14), wraplength=250, 
-                       text_color=("gray60", "gray40")).pack(pady=(0, 15), padx=15)
-        
-        # Important notes card
-        notes_card = ctk.CTkFrame(content_frame, corner_radius=10)
-        notes_card.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(15, 0))
-        
-        ctk.CTkLabel(notes_card, text="Important Notes", 
-                   font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 10))
-        
-        notes_text = """- Only scan systems and networks you own or have permission to test
-- Unauthorized scanning/packet capture may violate local laws and policies
-- Network traffic capture requires administrator privileges
-- Install dependencies: pip install psutil scapy
-- This tool is for educational and authorized security testing only"""
-        
-        ctk.CTkLabel(notes_card, text=notes_text, 
-                   font=ctk.CTkFont(size=14), justify="left").pack(pady=(0, 20), padx=20)
-
-
 class MainApplication(ctk.CTk):
     """Main Application Window"""
     
@@ -912,8 +717,8 @@ class MainApplication(ctk.CTk):
                 
         self.center_window()
                 
-        # Show Welcome screen by default
-        self.show_frame("Welcome")
+        # Show Network Traffic screen by default
+        self.show_frame("Network Traffic")
     
     def center_window(self):
         """Center the window on screen"""
@@ -932,7 +737,7 @@ class MainApplication(ctk.CTk):
                 
         self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(9, weight=1)
+        self.sidebar.grid_rowconfigure(4, weight=1)
                 
         sidebar_title = ctk.CTkLabel(self.sidebar, text="Security Toolkit", 
                                    font=ctk.CTkFont(size=20, weight="bold"))
@@ -940,11 +745,8 @@ class MainApplication(ctk.CTk):
                 
         self.sidebar_buttons = {}
         tools = [
-            "Welcome",
-            "System Info",
             "Network Traffic",
-            "Port Scanner",
-            "About"
+            "Port Scanner"
         ]
         
         for i, tool in enumerate(tools, 1):
@@ -959,11 +761,8 @@ class MainApplication(ctk.CTk):
         self.content_frame.grid(row=0, column=1, sticky="nsew")
                 
         self.frames = {}
-        self.frames["Welcome"] = WelcomeFrame(self.content_frame, on_module_select=self.show_frame)
-        self.frames["System Info"] = SystemInfoFrame(self.content_frame)
         self.frames["Network Traffic"] = NetworkTrafficFrame(self.content_frame)
         self.frames["Port Scanner"] = PortScannerFrame(self.content_frame)
-        self.frames["About"] = AboutFrame(self.content_frame)
                 
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)

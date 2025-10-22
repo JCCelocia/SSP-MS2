@@ -67,13 +67,14 @@ cd SSP-MS2
 
 ### 2. Install Dependencies
 ```bash
-# Required
+# Install all dependencies from requirements.txt
+pip install -r requirements.txt
+
+# Or install individually:
+# Required only
 pip install customtkinter
 
-# Optional (recommended for full functionality)
-pip install psutil scapy
-
-# Or install all at once
+# Required + Optional (recommended)
 pip install customtkinter psutil scapy
 ```
 

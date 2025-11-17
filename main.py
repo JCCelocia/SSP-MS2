@@ -1,3 +1,4 @@
+# main.py
 """
 Local Security Toolkit
 A GUI application for network monitoring and security testing.

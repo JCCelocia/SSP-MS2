@@ -1,3 +1,4 @@
+# backend.py
 import os
 import json
 import hashlib
@@ -533,3 +534,97 @@ class ScanSession:
         if self.start_time and self.end_time:
             return (self.end_time - self.start_time).total_seconds()
         return 0.0
+
+
+class NetworkPerformanceBackend:
+    """Backend for network performance monitoring"""
+    
+    def __init__(self):
+        self.prev_bytes_sent = 0
+        self.prev_bytes_recv = 0
+        self.prev_timestamp = 0.0
+    
+    def reset_counters(self):
+        """Initialize or reset the previous counters"""
+        if not PSUTIL_AVAILABLE:
+            return
+        
+        try:
+            counters = psutil.net_io_counters()
+            self.prev_bytes_sent = counters.bytes_sent
+            self.prev_bytes_recv = counters.bytes_recv
+            self.prev_timestamp = time.time()
+        except Exception:
+            self.prev_bytes_sent = 0
+            self.prev_bytes_recv = 0
+            self.prev_timestamp = time.time()
+    
+    def get_stats(self) -> dict:
+        """
+        Get current network performance statistics
+        Returns: dict with upload_mbps, download_mbps, bytes_sent, bytes_recv, connections, error
+        """
+        if not PSUTIL_AVAILABLE:
+            return {
+                "upload_mbps": None,
+                "download_mbps": None,
+                "bytes_sent": None,
+                "bytes_recv": None,
+                "connections": None,
+                "error": "psutil is not available"
+            }
+        
+        try:
+            # Get current counters
+            current = psutil.net_io_counters()
+            current_time = time.time()
+            
+            # Calculate deltas
+            delta_bytes_sent = current.bytes_sent - self.prev_bytes_sent
+            delta_bytes_recv = current.bytes_recv - self.prev_bytes_recv
+            delta_time = current_time - self.prev_timestamp
+            
+            # Avoid division by zero
+            if delta_time < 0.001:
+                upload_mbps = 0.0
+                download_mbps = 0.0
+            else:
+                # Convert to MB/s
+                upload_mbps = (delta_bytes_sent / delta_time) / (1024 * 1024)
+                download_mbps = (delta_bytes_recv / delta_time) / (1024 * 1024)
+            
+            # Get total bytes
+            bytes_sent = current.bytes_sent
+            bytes_recv = current.bytes_recv
+            
+            # Get connection count
+            connections = None
+            try:
+                connections = len(psutil.net_connections())
+            except Exception:
+                # If net_connections() fails (permissions), leave as None
+                pass
+            
+            # Update stored values
+            self.prev_bytes_sent = current.bytes_sent
+            self.prev_bytes_recv = current.bytes_recv
+            self.prev_timestamp = current_time
+            
+            return {
+                "upload_mbps": upload_mbps,
+                "download_mbps": download_mbps,
+                "bytes_sent": bytes_sent,
+                "bytes_recv": bytes_recv,
+                "connections": connections,
+                "error": None
+            }
+        
+        except Exception as e:
+            return {
+                "upload_mbps": None,
+                "download_mbps": None,
+                "bytes_sent": None,
+                "bytes_recv": None,
+                "connections": None,
+                "error": str(e)
+            }

@@ -27,15 +27,21 @@ A GUI application for network monitoring and security testing, built with Python
 - Real-time progress tracking
 - **Only use on systems you own or have permission to test**
 
+### Network Performance Monitor
+- Real-time upload/download speed monitoring (MB/s)
+- Total bytes sent and received statistics
+- Active network connections count
+- Automatic updates every second
+- **Requires psutil library**
+
 ---
 
 ## Requirements
-
 ```bash
 Python 3.7+
 customtkinter>=5.0.0
 scapy>=2.4.5
-psutil>=5.8.0  # Optional, for better interface detection
+psutil>=5.8.0
 ```
 
 ---
@@ -86,6 +92,15 @@ python main.py
 4. Click "Start Scan"
 5. View open ports in green as they're discovered
 
+### Network Performance Monitor
+1. Click "Network Performance" in the sidebar
+2. View real-time statistics:
+   - Upload/Download speeds in MB/s
+   - Total bytes sent and received
+   - Number of active network connections
+3. Statistics update automatically every second
+4. No configuration needed - monitoring starts immediately
+
 ---
 
 ## Project Structure
@@ -106,6 +121,7 @@ SSP-MS2/
 - **GUI:** CustomTkinter with dark theme
 - **Network Analysis:** Scapy for packet capture
 - **Port Scanning:** Python socket library
+- **Performance Monitoring:** psutil for network statistics
 - **Threading:** Non-blocking operations
 
 ---
@@ -118,6 +134,7 @@ SSP-MS2/
 - Unauthorized scanning may violate laws and policies
 - Network capture requires administrator/root privileges
 - Packet capture may be subject to wiretapping laws
+- Network Performance Monitor requires psutil library
 
 ---
 
@@ -136,6 +153,11 @@ pip install customtkinter scapy psutil
 - Test with localhost (127.0.0.1) first
 - Increase timeout value
 - Check firewall settings
+
+**Network Performance Monitor Shows "psutil is not available"**
+```bash
+pip install psutil
+```
 
 **Application Won't Start**
 ```bash
@@ -157,4 +179,3 @@ This project is for educational purposes only. The authors are not responsible f
 **Authors:** Maricon Caluya and Jannine Claire Celocia  
 **Repository:** [github.com/JCCelocia/SSP-MS2](https://github.com/JCCelocia/SSP-MS2)  
 **Year:** 2025
-

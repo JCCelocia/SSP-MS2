@@ -1,3 +1,4 @@
+# frontend.py
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk
@@ -6,7 +7,7 @@ import tkinter.messagebox as msgbox
 from typing import Optional
 
 from backend import (
-    PortScannerBackend, NetworkTrafficBackend
+    PortScannerBackend, NetworkTrafficBackend, NetworkPerformanceBackend
 )
 
 
@@ -701,6 +702,173 @@ class PortScannerFrame(ctk.CTkFrame):
         self.after(0, lambda: msgbox.showerror("Scan Error", error))
 
 
+class NetworkPerformanceFrame(ctk.CTkFrame):
+    """Network Performance Monitor Frame"""
+    
+    def __init__(self, parent):
+        super().__init__(parent, corner_radius=15)
+        self.backend = NetworkPerformanceBackend()
+        self.updating = False
+        self.setup_ui()
+        self.backend.reset_counters()
+        self.start_updates()
+    
+    def setup_ui(self):
+        main_container = ctk.CTkFrame(self, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=30, pady=30)
+        
+        # Header section
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 20))
+        
+        title = ctk.CTkLabel(header_frame, text="Network Performance Monitor", 
+                           font=ctk.CTkFont(size=28, weight="bold"))
+        title.pack(side="left")
+        
+        subtitle = ctk.CTkLabel(header_frame, text="Real-time upload/download speed and connection overview", 
+                              font=ctk.CTkFont(size=14), text_color=("gray60", "gray40"))
+        subtitle.pack(side="left", padx=(15, 0), anchor="s")
+        
+        # Speed section
+        speed_section = ctk.CTkFrame(main_container, corner_radius=10)
+        speed_section.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(speed_section, text="Network Speed", 
+                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 20))
+        
+        # Upload speed
+        upload_frame = ctk.CTkFrame(speed_section, fg_color="transparent")
+        upload_frame.pack(fill="x", padx=30, pady=(0, 15))
+        
+        ctk.CTkLabel(upload_frame, text="Upload Speed:", 
+                   font=ctk.CTkFont(size=14)).pack(side="left")
+        self.upload_label = ctk.CTkLabel(upload_frame, text="0.00 MB/s", 
+                                        font=ctk.CTkFont(size=24, weight="bold"),
+                                        text_color=("#3B8ED0", "#1F6AA5"))
+        self.upload_label.pack(side="left", padx=(10, 0))
+        
+        # Download speed
+        download_frame = ctk.CTkFrame(speed_section, fg_color="transparent")
+        download_frame.pack(fill="x", padx=30, pady=(0, 20))
+        
+        ctk.CTkLabel(download_frame, text="Download Speed:", 
+                   font=ctk.CTkFont(size=14)).pack(side="left")
+        self.download_label = ctk.CTkLabel(download_frame, text="0.00 MB/s", 
+                                          font=ctk.CTkFont(size=24, weight="bold"),
+                                          text_color=("#3B8ED0", "#1F6AA5"))
+        self.download_label.pack(side="left", padx=(10, 0))
+        
+        # Totals section
+        totals_section = ctk.CTkFrame(main_container, corner_radius=10)
+        totals_section.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(totals_section, text="Total Data Transfer", 
+                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 20))
+        
+        # Bytes sent
+        sent_frame = ctk.CTkFrame(totals_section, fg_color="transparent")
+        sent_frame.pack(fill="x", padx=30, pady=(0, 10))
+        
+        ctk.CTkLabel(sent_frame, text="Bytes Sent:", 
+                   font=ctk.CTkFont(size=12)).pack(side="left")
+        self.sent_label = ctk.CTkLabel(sent_frame, text="0", 
+                                      font=ctk.CTkFont(size=14))
+        self.sent_label.pack(side="left", padx=(10, 0))
+        
+        # Bytes received
+        recv_frame = ctk.CTkFrame(totals_section, fg_color="transparent")
+        recv_frame.pack(fill="x", padx=30, pady=(0, 20))
+        
+        ctk.CTkLabel(recv_frame, text="Bytes Received:", 
+                   font=ctk.CTkFont(size=12)).pack(side="left")
+        self.recv_label = ctk.CTkLabel(recv_frame, text="0", 
+                                      font=ctk.CTkFont(size=14))
+        self.recv_label.pack(side="left", padx=(10, 0))
+        
+        # Connections section
+        connections_section = ctk.CTkFrame(main_container, corner_radius=10)
+        connections_section.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(connections_section, text="Network Connections", 
+                   font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 20))
+        
+        conn_frame = ctk.CTkFrame(connections_section, fg_color="transparent")
+        conn_frame.pack(fill="x", padx=30, pady=(0, 20))
+        
+        ctk.CTkLabel(conn_frame, text="Active Connections:", 
+                   font=ctk.CTkFont(size=12)).pack(side="left")
+        self.connections_label = ctk.CTkLabel(conn_frame, text="0", 
+                                             font=ctk.CTkFont(size=14))
+        self.connections_label.pack(side="left", padx=(10, 0))
+        
+        # Error message label (hidden by default)
+        self.error_label = ctk.CTkLabel(main_container, text="", 
+                                       text_color="orange",
+                                       font=ctk.CTkFont(size=12, weight="bold"))
+        self.error_label.pack(pady=(10, 0))
+    
+    def start_updates(self):
+        """Start the update cycle"""
+        self.updating = True
+        self.backend.reset_counters()
+        self.schedule_update()
+    
+    def schedule_update(self):
+        """Schedule the next update"""
+        if self.updating:
+            self.update_stats()
+            self.after(1000, self.schedule_update)
+    
+    def update_stats(self):
+        """Update statistics from backend"""
+        stats = self.backend.get_stats()
+        
+        if stats["error"]:
+            # Show error message
+            self.error_label.configure(text=f"⚠️ {stats['error']}")
+            self.upload_label.configure(text="N/A")
+            self.download_label.configure(text="N/A")
+            self.sent_label.configure(text="N/A")
+            self.recv_label.configure(text="N/A")
+            self.connections_label.configure(text="N/A")
+        else:
+            # Clear error message
+            self.error_label.configure(text="")
+            
+            # Update speeds
+            if stats["upload_mbps"] is not None:
+                self.upload_label.configure(text=f"{stats['upload_mbps']:.2f} MB/s")
+            else:
+                self.upload_label.configure(text="N/A")
+            
+            if stats["download_mbps"] is not None:
+                self.download_label.configure(text=f"{stats['download_mbps']:.2f} MB/s")
+            else:
+                self.download_label.configure(text="N/A")
+            
+            # Update totals
+            if stats["bytes_sent"] is not None:
+                self.sent_label.configure(text=f"{stats['bytes_sent']:,}")
+            else:
+                self.sent_label.configure(text="N/A")
+            
+            if stats["bytes_recv"] is not None:
+                self.recv_label.configure(text=f"{stats['bytes_recv']:,}")
+            else:
+                self.recv_label.configure(text="N/A")
+            
+            # Update connections
+            if stats["connections"] is not None:
+                self.connections_label.configure(text=str(stats["connections"]))
+            else:
+                self.connections_label.configure(text="N/A")
+    
+    def destroy(self):
+        """Stop updates when frame is destroyed"""
+        self.updating = False
+        super().destroy()
+
+
 class MainApplication(ctk.CTk):
     """Main Application Window"""
     
@@ -746,7 +914,8 @@ class MainApplication(ctk.CTk):
         self.sidebar_buttons = {}
         tools = [
             "Network Traffic",
-            "Port Scanner"
+            "Port Scanner",
+            "Network Performance"
         ]
         
         for i, tool in enumerate(tools, 1):
@@ -763,6 +932,7 @@ class MainApplication(ctk.CTk):
         self.frames = {}
         self.frames["Network Traffic"] = NetworkTrafficFrame(self.content_frame)
         self.frames["Port Scanner"] = PortScannerFrame(self.content_frame)
+        self.frames["Network Performance"] = NetworkPerformanceFrame(self.content_frame)
                 
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
